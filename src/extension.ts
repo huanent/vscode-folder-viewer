@@ -31,6 +31,10 @@ type WebviewMessage =
 	| { type: 'cancelOperation'; operationId: string }
 	| { type: 'delete'; uris: string[]; permanent: boolean };
 
+type OpenCommandOptions = {
+	openHomeDirectory?: boolean;
+};
+
 class ViewerDocument implements vscode.CustomDocument {
 	latestViewState: ViewerViewState;
 
@@ -65,8 +69,12 @@ export function activate(context: vscode.ExtensionContext) {
 	};
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand('folderViewer.open', async (uri?: vscode.Uri) => {
-			const rootUri = uri ?? (await vscode.window.showOpenDialog({
+		vscode.commands.registerCommand('folderViewer.open', async (argument?: vscode.Uri | OpenCommandOptions) => {
+			const rootUri = argument instanceof vscode.Uri
+				? argument
+				: argument?.openHomeDirectory
+					? vscode.Uri.file(homedir())
+					: (await vscode.window.showOpenDialog({
 				defaultUri: vscode.Uri.file(homedir()),
 				canSelectFiles: false,
 				canSelectFolders: true,
@@ -90,7 +98,7 @@ async function openFolderViewer(rootUri: vscode.Uri): Promise<void> {
 	const folderName = getDisplayName(rootUri);
 	const resourceUri = vscode.Uri.from({
 		scheme: 'folder-viewer',
-		path: `/${folderName}.folder-viewer`,
+		path: `/${folderName}`,
 		query: new URLSearchParams({ root: rootUri.toString(), id: randomUUID() }).toString()
 	});
 	await vscode.commands.executeCommand('vscode.openWith', resourceUri, viewerViewType, {

@@ -2,7 +2,7 @@
   "name": "folder-viewer",
   "displayName": "Folder Viewer",
   "description": "Explore a folder in the editor view",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "publisher": "huanent",
   "icon": "resources/logo.png",
   "repository": {
@@ -42,7 +42,10 @@
       {
         "command": "folderViewer.open",
         "key": "ctrl+shift+;",
-        "mac": "cmd+shift+;"
+        "mac": "cmd+shift+;",
+        "args": {
+          "openHomeDirectory": true
+        }
       }
     ],
     "menus": {

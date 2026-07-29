@@ -1,4 +1,7 @@
 :root {
+	--table-columns: minmax(180px, 1fr) minmax(150px, 210px) minmax(150px, 210px) 90px;
+	--table-column-gap: 16px;
+	--table-inline-padding: 10px;
 	color-scheme: light dark;
 	font-family: var(--vscode-font-family);
 	font-size: var(--vscode-font-size);
@@ -36,9 +39,8 @@ button {
 	display: grid;
 	grid-template-columns: auto minmax(0, 1fr);
 	align-items: center;
-	gap: 10px;
+	gap: 8px;
 	height: 46px;
-	padding: 0px 12px 4px 12px;
 	border-bottom: 1px solid var(--vscode-panel-border);
 	background: var(--vscode-editor-background);
 }
@@ -244,38 +246,37 @@ main {
 .column-header,
 .file-list .file-entry {
 	display: grid;
-	grid-template-columns: minmax(180px, 1fr) minmax(150px, 210px) minmax(150px, 210px) 90px;
+	grid-template-columns: var(--table-columns);
 	align-items: center;
+	column-gap: var(--table-column-gap);
+	padding-inline: var(--table-inline-padding);
 }
 
 .column-header {
 	position: sticky;
 	top: 0;
 	z-index: 2;
-	height: 30px;
-	padding: 0 14px 0 20px;
+	height: 32px;
 	border-bottom: 1px solid var(--vscode-panel-border);
 	color: var(--vscode-descriptionForeground);
 	background: var(--vscode-editor-background);
 	font-size: 12px;
 }
 
+.column-header span:first-child {
+	padding-left: 24px;
+}
+
 .column-header span:last-child {
 	text-align: right;
 }
 
-.column-header span:nth-child(2),
-.column-header span:nth-child(3) {
-	text-align: center;
-}
-
 .file-list {
-	padding: 4px 8px 12px;
+	padding: 4px 0 12px;
 }
 
 .file-list .file-entry {
-	height: 30px;
-	padding: 0 6px 0 10px;
+	height: 32px;
 	border-radius: 3px;
 }
 
@@ -337,7 +338,6 @@ main {
 .entry-created,
 .entry-modified,
 .entry-size {
-	padding-left: 12px;
 	color: var(--vscode-descriptionForeground);
 	font-size: 12px;
 }
