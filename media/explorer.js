@@ -119,13 +119,28 @@
 			const row = document.createElement('div');
 			row.className = 'favorite-item';
 			const relativePath = getRelativePath(uri);
+			const pathParts = relativePath.split('/');
+			const folderName = pathParts.pop();
+			const parentPath = pathParts.join('/');
 			const openButton = document.createElement('button');
 			openButton.type = 'button';
 			openButton.className = 'favorite-open-button';
 			openButton.title = relativePath;
-			const label = document.createElement('span');
-			label.textContent = relativePath;
-			openButton.append(label);
+			const icon = document.createElement('i');
+			icon.className = 'codicon codicon-folder';
+			const details = document.createElement('span');
+			details.className = 'favorite-details';
+			const name = document.createElement('span');
+			name.className = 'favorite-name';
+			name.textContent = folderName;
+			details.append(name);
+			if (parentPath) {
+				const parent = document.createElement('span');
+				parent.className = 'favorite-parent';
+				parent.textContent = parentPath;
+				details.append(parent);
+			}
+			openButton.append(icon, details);
 			openButton.addEventListener('click', () => {
 				hideFavorites();
 				requestDirectory(uri, true);
@@ -493,9 +508,9 @@
 	}
 
 	function formatDate(timestamp) {
-		return new Intl.DateTimeFormat(undefined, {
-			year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-		}).format(timestamp);
+		const date = new Date(timestamp);
+		const pad = value => String(value).padStart(2, '0');
+		return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 	}
 
 	elements.backButton.addEventListener('click', () => {
