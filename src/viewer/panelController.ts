@@ -26,8 +26,7 @@ export class ViewerPanelController implements vscode.Disposable {
 		panel.webview.options = {
 			enableScripts: true,
 			localResourceRoots: [
-				vscode.Uri.joinPath(context.extensionUri, 'media'),
-				vscode.Uri.joinPath(context.extensionUri, 'node_modules', '@vscode', 'codicons', 'dist')
+				vscode.Uri.joinPath(context.extensionUri, 'media')
 			]
 		};
 		panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'logo.svg');

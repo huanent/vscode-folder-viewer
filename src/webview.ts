@@ -15,9 +15,6 @@ export function getWebviewHtml(
 	const nonce = getNonce();
 	const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'explorer.css'));
 	const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'explorer.js'));
-	const codiconsUri = webview.asWebviewUri(
-		vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css')
-	);
 
 	return `<!DOCTYPE html>
 <html lang="en">
@@ -25,7 +22,6 @@ export function getWebviewHtml(
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
-	<link rel="stylesheet" href="${codiconsUri}">
 	<link rel="stylesheet" href="${styleUri}">
 	<title>${escapeHtml(folderName)}</title>
 </head>

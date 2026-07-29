@@ -9,7 +9,3 @@ vsc-extension-quickstart.md
 **/*.ts
 webview/**
 vite.config.*
-node_modules/@vscode/codicons/**
-!node_modules/@vscode/codicons/dist/
-!node_modules/@vscode/codicons/dist/codicon.css
-!node_modules/@vscode/codicons/dist/codicon.ttf
