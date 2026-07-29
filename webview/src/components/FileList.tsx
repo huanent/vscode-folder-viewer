@@ -5,6 +5,8 @@ import type { FileEntry } from '../types';
 
 type FileListProps = Pick<FolderViewerModel, 'state' | 'actions'>;
 
+const fileGridClasses = 'grid grid-cols-[minmax(180px,1fr)_minmax(150px,210px)_minmax(150px,210px)_90px] items-center gap-x-4 px-2.5 max-[600px]:grid-cols-[minmax(140px,1fr)_72px]';
+
 export function FileList({ state, actions }: FileListProps) {
 	return (
 		<main
@@ -14,8 +16,8 @@ export function FileList({ state, actions }: FileListProps) {
 			}}
 			onContextMenu={event => actions.showContextMenu(event, null)}
 		>
-			<div className="file-grid sticky top-0 z-2 h-8 border-b border-border bg-app text-xs text-muted">
-				<span className="pl-6">Name</span><span>Created</span><span>Modified</span><span className="text-right">Size</span>
+			<div className={`${fileGridClasses} sticky top-0 z-2 h-8 border-b border-border bg-app text-xs text-muted`}>
+				<span className="pl-6">Name</span><span className="max-[600px]:hidden">Created</span><span className="max-[600px]:hidden">Modified</span><span className="text-right">Size</span>
 			</div>
 			<div className="py-1 pb-3" role="listbox" aria-label="Folder contents" aria-multiselectable="true">
 				{state.entries.map(entry => (
@@ -37,7 +39,7 @@ function FileRow({ entry, state, actions }: { entry: FileEntry } & FileListProps
 
 	return (
 		<div
-			className={`file-grid h-8 cursor-default rounded-sm ${classes} ${cut ? 'opacity-50' : ''}`}
+			className={`${fileGridClasses} h-8 cursor-default rounded-sm ${classes} ${cut ? 'opacity-50' : ''}`}
 			role="option"
 			aria-selected={selected}
 			tabIndex={0}
@@ -56,8 +58,8 @@ function FileRow({ entry, state, actions }: { entry: FileEntry } & FileListProps
 				<i className={`codicon ${entry.type === 'directory' ? 'codicon-folder text-folder' : `${getFileIcon(entry.name)} text-file`} shrink-0 text-base ${selected ? 'text-inherit!' : ''}`} />
 				<span className="overflow-hidden text-ellipsis whitespace-nowrap">{entry.name}</span>
 			</div>
-			<span className={`entry-created overflow-hidden text-xs text-ellipsis whitespace-nowrap ${selected ? 'text-inherit' : 'text-muted'}`}>{formatDate(entry.created)}</span>
-			<span className={`entry-modified overflow-hidden text-xs text-ellipsis whitespace-nowrap ${selected ? 'text-inherit' : 'text-muted'}`}>{formatDate(entry.modified)}</span>
+			<span className={`entry-created overflow-hidden text-xs text-ellipsis whitespace-nowrap max-[600px]:hidden ${selected ? 'text-inherit' : 'text-muted'}`}>{formatDate(entry.created)}</span>
+			<span className={`entry-modified overflow-hidden text-xs text-ellipsis whitespace-nowrap max-[600px]:hidden ${selected ? 'text-inherit' : 'text-muted'}`}>{formatDate(entry.modified)}</span>
 			<EntrySize entry={entry} selected={selected} onCalculate={(event) => actions.calculateSize(entry, event.metaKey || event.ctrlKey)} />
 		</div>
 	);

@@ -68,21 +68,3 @@
 		font: inherit;
 	}
 }
-
-@utility file-grid {
-	display: grid;
-	grid-template-columns: minmax(180px, 1fr) minmax(150px, 210px) minmax(150px, 210px) 90px;
-	align-items: center;
-	column-gap: 16px;
-	padding-inline: 10px;
-}
-
-@media (max-width: 600px) {
-	.file-grid {
-		grid-template-columns: minmax(140px, 1fr) 72px;
-	}
-
-	.file-grid > :is(:nth-child(2), :nth-child(3)) {
-		display: none;
-	}
-}
