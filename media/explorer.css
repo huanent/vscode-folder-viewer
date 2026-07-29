@@ -37,9 +37,9 @@ button {
 
 .toolbar {
 	display: grid;
-	grid-template-columns: auto minmax(0, 1fr);
+	grid-template-columns: auto minmax(0, 1fr) 28px;
 	align-items: center;
-	gap: 8px;
+	gap: 4px;
 	height: 46px;
 	border-bottom: 1px solid var(--vscode-panel-border);
 	background: var(--vscode-editor-background);
@@ -90,7 +90,7 @@ button {
 	display: grid;
 	min-width: 0;
 	height: 30px;
-	grid-template-columns: minmax(0, 1fr) 28px;
+	grid-template-columns: minmax(0, 1fr) 30px;
 	align-items: center;
 	overflow: hidden;
 	border: 1px solid var(--vscode-input-border, var(--vscode-widget-border, var(--vscode-panel-border)));
@@ -111,7 +111,13 @@ button {
 .path-favorite-button {
 	width: 28px;
 	height: 28px;
+	margin-right: 4px;
 	border-radius: 0;
+}
+
+.path-favorite-button:hover:not(:disabled),
+.path-favorite-button.selected {
+	background: transparent;
 }
 
 .breadcrumbs::-webkit-scrollbar {
@@ -151,7 +157,7 @@ button {
 .favorites-panel {
 	position: fixed;
 	top: 44px;
-	left: 48px;
+	right: 4px;
 	z-index: 10;
 	width: min(340px, calc(100% - 24px));
 	max-height: min(420px, calc(100% - 64px));

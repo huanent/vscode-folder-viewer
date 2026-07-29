@@ -2,7 +2,7 @@
   "name": "folder-viewer",
   "displayName": "Folder Viewer",
   "description": "Explore a folder in the editor view",
-  "version": "2.2.2",
+  "version": "2.3.0",
   "publisher": "huanent",
   "icon": "resources/logo.png",
   "repository": {

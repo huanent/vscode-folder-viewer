@@ -38,12 +38,12 @@ export function getWebviewHtml(
 		<div class="navigation-actions" role="toolbar" aria-label="Navigation">
 			<button id="backButton" class="icon-button" type="button" title="Back" aria-label="Back" disabled><i class="codicon codicon-arrow-left"></i></button>
 			<button id="refreshButton" class="icon-button" type="button" title="Refresh" aria-label="Refresh"><i class="codicon codicon-refresh"></i></button>
-			<button id="showFavoritesButton" class="icon-button" type="button" title="Favorites" aria-label="Favorites" aria-expanded="false"><i class="codicon codicon-bookmark"></i></button>
 		</div>
 		<div class="path-box">
 			<nav id="breadcrumbs" class="breadcrumbs" aria-label="Folder path"></nav>
 			<button id="favoriteCurrentButton" class="icon-button path-favorite-button" type="button" title="Add current folder to favorites" aria-label="Add current folder to favorites" aria-pressed="false"><i class="codicon codicon-star-empty"></i></button>
 		</div>
+		<button id="showFavoritesButton" class="icon-button" type="button" title="Favorites" aria-label="Favorites" aria-expanded="false"><i class="codicon codicon-bookmark"></i></button>
 	</header>
 	<section id="favoritesPanel" class="favorites-panel" aria-label="Favorites" hidden>
 		<div class="favorites-heading">
@@ -78,9 +78,9 @@ export function getWebviewHtml(
 		<div class="context-menu-separator" role="separator"></div>
 		<button id="copyPathButton" type="button" role="menuitem"><i class="codicon codicon-copy"></i><span>Copy Path</span><span class="menu-shortcut" data-mac="⌥⌘C" data-other="Shift+Alt+C"></span></button>
 		<button id="renameButton" type="button" role="menuitem"><i class="codicon codicon-rename"></i><span>Rename</span><span class="menu-shortcut">F2</span></button>
-		<button id="openInNewWindowButton" type="button" role="menuitem"><i class="codicon codicon-empty-window"></i><span>Open in New Window</span></button>
+		<button id="openInNewTabButton" type="button" role="menuitem"><i class="codicon codicon-file-symlink-directory"></i><span>Open in New Tab</span></button>
+		<button id="openInNewWindowButton" type="button" role="menuitem"><i class="codicon codicon-open-in-window"></i><span>Open in New Window</span></button>
 		<button id="openInTerminalButton" type="button" role="menuitem"><i class="codicon codicon-terminal"></i><span>Open in Terminal</span></button>
-		<button id="favoriteButton" type="button" role="menuitem"><i class="codicon codicon-star-empty"></i><span>Add to Favorites</span></button>
 		<div class="context-menu-separator" role="separator"></div>
 		<button id="compressButton" type="button" role="menuitem"><i class="codicon codicon-file-zip"></i><span>Compress to ZIP</span></button>
 		<button id="extractButton" type="button" role="menuitem"><i class="codicon codicon-file-zip"></i><span>Extract ZIP</span></button>

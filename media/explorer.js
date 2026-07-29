@@ -20,9 +20,9 @@
 		pasteButton: document.getElementById('pasteButton'),
 		copyPathButton: document.getElementById('copyPathButton'),
 		renameButton: document.getElementById('renameButton'),
+		openInNewTabButton: document.getElementById('openInNewTabButton'),
 		openInNewWindowButton: document.getElementById('openInNewWindowButton'),
 		openInTerminalButton: document.getElementById('openInTerminalButton'),
-		favoriteButton: document.getElementById('favoriteButton'),
 		compressButton: document.getElementById('compressButton'),
 		extractButton: document.getElementById('extractButton'),
 		archiveSeparator: document.getElementById('archiveSeparator'),
@@ -387,15 +387,9 @@
 			&& selectedEntries[0].type === 'directory'
 			&& selectedEntries[0].uri === entry?.uri
 		);
+		elements.openInNewTabButton.hidden = !canOpenFolder;
 		elements.openInNewWindowButton.hidden = !canOpenFolder;
 		elements.openInTerminalButton.hidden = !canOpenFolder;
-		elements.favoriteButton.hidden = !canOpenFolder || !hasSelection;
-		if (!elements.favoriteButton.hidden) {
-			const favorite = state.favoriteUris.includes(selectedEntries[0].uri);
-			elements.favoriteButton.dataset.favorite = String(favorite);
-			elements.favoriteButton.querySelector('.codicon').className = `codicon ${favorite ? 'codicon-star-full' : 'codicon-star-empty'}`;
-			elements.favoriteButton.querySelector('span').textContent = favorite ? 'Remove from Favorites' : 'Add to Favorites';
-		}
 		const canExtract = selectedEntries.length === 1
 			&& selectedEntries[0].type === 'file'
 			&& selectedEntries[0].name.toLowerCase().endsWith('.zip');
@@ -454,6 +448,11 @@
 	function openInNewWindow(entry) {
 		const uri = entry?.type === 'directory' ? entry.uri : state.currentUri;
 		vscode.postMessage({ type: 'openInNewWindow', uri });
+	}
+
+	function openInNewTab(entry) {
+		const uri = entry?.type === 'directory' ? entry.uri : state.currentUri;
+		vscode.postMessage({ type: 'openInNewTab', uri });
 	}
 
 	function compressEntries(entries) {
@@ -560,19 +559,16 @@
 		renameEntry(getSelectedEntries()[0]);
 		hideContextMenu();
 	});
+	elements.openInNewTabButton.addEventListener('click', () => {
+		openInNewTab(state.contextEntry);
+		hideContextMenu();
+	});
 	elements.openInNewWindowButton.addEventListener('click', () => {
 		openInNewWindow(state.contextEntry);
 		hideContextMenu();
 	});
 	elements.openInTerminalButton.addEventListener('click', () => {
 		openInTerminal(state.contextEntry);
-		hideContextMenu();
-	});
-	elements.favoriteButton.addEventListener('click', () => {
-		const entry = getSelectedEntries()[0];
-		if (entry?.type === 'directory') {
-			setFavorite(entry.uri, elements.favoriteButton.dataset.favorite !== 'true');
-		}
 		hideContextMenu();
 	});
 	elements.compressButton.addEventListener('click', () => {

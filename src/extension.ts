@@ -24,6 +24,7 @@ type WebviewMessage =
 	| { type: 'rename'; uri: string }
 	| { type: 'copyPath'; uris: string[] }
 	| { type: 'setFavorite'; uri: string; favorite: boolean }
+	| { type: 'openInNewTab'; uri: string }
 	| { type: 'openInNewWindow'; uri: string }
 	| { type: 'openInTerminal'; uri: string }
 	| { type: 'compress'; operationId: string; uris: string[]; destinationUri: string }
@@ -246,6 +247,15 @@ function configureViewerPanel(context: vscode.ExtensionContext, panel: vscode.We
 							: favorites.filter(uri => uri !== target);
 						await context.globalState.update(favoritesStorageKey, updatedFavorites);
 						await broadcastFavorites(updatedFavorites);
+						break;
+					}
+					case 'openInNewTab': {
+						const directoryUri = getSafeUri(rootUri, message.uri);
+						const stat = await vscode.workspace.fs.stat(directoryUri);
+						if (!(stat.type & vscode.FileType.Directory)) {
+							throw new Error('Only folders can be opened in a new tab.');
+						}
+						await openFolderViewer(directoryUri);
 						break;
 					}
 					case 'openInNewWindow': {
