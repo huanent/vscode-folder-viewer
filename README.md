@@ -2,13 +2,13 @@
 
 Explore and manage a folder in a full-size VS Code editor tab.
 
-Folder Viewer provides a familiar file manager without replacing the built-in Explorer. Open any folder in its own tab, browse with breadcrumbs, switch between list and grid layouts, and perform common file operations without leaving VS Code.
+Folder Viewer provides a familiar file manager without replacing the built-in Explorer. Open any folder in its own tab, browse with breadcrumbs, and perform common file operations without leaving VS Code.
 
 ## Features
 
 - Open multiple folders in independent editor tabs
 - Browse within the selected root folder using breadcrumbs and back navigation
-- Switch between list and grid views
+- Save favorite folders and jump back to them from the toolbar
 - View file creation time, modification time, and size
 - Calculate the size of individual folders or all folders in the current directory
 - Open files with their registered VS Code editor

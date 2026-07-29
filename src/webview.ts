@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 export interface ViewerViewState {
 	currentUri: string;
 	history: string[];
-	view: 'list' | 'grid';
 }
 
 export function getWebviewHtml(
@@ -34,24 +33,31 @@ export function getWebviewHtml(
 	data-root-uri="${escapeHtml(rootUri.toString())}"
 	data-current-uri="${escapeHtml(initialViewState.currentUri)}"
 	data-history="${escapeHtml(JSON.stringify(initialViewState.history))}"
-	data-view="${initialViewState.view}"
 >
 	<header class="toolbar">
 		<div class="navigation-actions" role="toolbar" aria-label="Navigation">
 			<button id="backButton" class="icon-button" type="button" title="Back" aria-label="Back" disabled><i class="codicon codicon-arrow-left"></i></button>
 			<button id="refreshButton" class="icon-button" type="button" title="Refresh" aria-label="Refresh"><i class="codicon codicon-refresh"></i></button>
+			<button id="showFavoritesButton" class="icon-button" type="button" title="Favorites" aria-label="Favorites" aria-expanded="false"><i class="codicon codicon-bookmark"></i></button>
 		</div>
-		<nav id="breadcrumbs" class="breadcrumbs" aria-label="Folder path"></nav>
-		<div class="view-actions" role="group" aria-label="View">
-			<button id="listViewButton" class="icon-button selected" type="button" title="List view" aria-label="List view" aria-pressed="true"><i class="codicon codicon-list-unordered"></i></button>
-			<button id="gridViewButton" class="icon-button" type="button" title="Grid view" aria-label="Grid view" aria-pressed="false"><i class="codicon codicon-layout"></i></button>
+		<div class="path-box">
+			<nav id="breadcrumbs" class="breadcrumbs" aria-label="Folder path"></nav>
+			<button id="favoriteCurrentButton" class="icon-button path-favorite-button" type="button" title="Add current folder to favorites" aria-label="Add current folder to favorites" aria-pressed="false"><i class="codicon codicon-star-empty"></i></button>
 		</div>
 	</header>
+	<section id="favoritesPanel" class="favorites-panel" aria-label="Favorites" hidden>
+		<div class="favorites-heading">
+			<span>Favorites</span>
+			<button id="closeFavoritesButton" class="favorites-close-button" type="button" title="Close favorites" aria-label="Close favorites"><i class="codicon codicon-close"></i></button>
+		</div>
+		<div id="favoritesList" class="favorites-list"></div>
+		<div id="favoritesEmptyState" class="favorites-empty-state">No favorite folders.</div>
+	</section>
 	<main id="fileListRegion">
 		<div id="columnHeader" class="column-header">
 			<span>Name</span><span>Created</span><span>Modified</span><span>Size</span>
 		</div>
-		<div id="fileList" class="file-list list-view" role="listbox" aria-label="Folder contents" aria-multiselectable="true"></div>
+		<div id="fileList" class="file-list" role="listbox" aria-label="Folder contents" aria-multiselectable="true"></div>
 		<div id="emptyState" class="empty-state" hidden>This folder is empty.</div>
 	</main>
 	<section id="archiveProgress" class="archive-progress" role="status" aria-live="polite" hidden>
@@ -74,6 +80,7 @@ export function getWebviewHtml(
 		<button id="renameButton" type="button" role="menuitem"><i class="codicon codicon-rename"></i><span>Rename</span><span class="menu-shortcut">F2</span></button>
 		<button id="openInNewWindowButton" type="button" role="menuitem"><i class="codicon codicon-empty-window"></i><span>Open in New Window</span></button>
 		<button id="openInTerminalButton" type="button" role="menuitem"><i class="codicon codicon-terminal"></i><span>Open in Terminal</span></button>
+		<button id="favoriteButton" type="button" role="menuitem"><i class="codicon codicon-star-empty"></i><span>Add to Favorites</span></button>
 		<div class="context-menu-separator" role="separator"></div>
 		<button id="compressButton" type="button" role="menuitem"><i class="codicon codicon-file-zip"></i><span>Compress to ZIP</span></button>
 		<button id="extractButton" type="button" role="menuitem"><i class="codicon codicon-file-zip"></i><span>Extract ZIP</span></button>

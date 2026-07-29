@@ -15,7 +15,7 @@ import { ViewerViewState, getWebviewHtml } from './webview';
 
 type WebviewMessage =
 	| { type: 'ready'; currentUri?: string }
-	| { type: 'stateChanged'; currentUri: string; history: string[]; view: 'list' | 'grid' }
+	| { type: 'stateChanged'; currentUri: string; history: string[] }
 	| { type: 'readDirectory'; uri: string }
 	| { type: 'openFile'; uri: string }
 	| { type: 'calculateDirectorySize'; uri: string }
@@ -23,6 +23,7 @@ type WebviewMessage =
 	| { type: 'paste'; destinationUri: string }
 	| { type: 'rename'; uri: string }
 	| { type: 'copyPath'; uris: string[] }
+	| { type: 'setFavorite'; uri: string; favorite: boolean }
 	| { type: 'openInNewWindow'; uri: string }
 	| { type: 'openInTerminal'; uri: string }
 	| { type: 'compress'; operationId: string; uris: string[]; destinationUri: string }
@@ -36,8 +37,7 @@ class ViewerDocument implements vscode.CustomDocument {
 	constructor(readonly uri: vscode.Uri, readonly rootUri: vscode.Uri) {
 		this.latestViewState = {
 			currentUri: rootUri.toString(),
-			history: [],
-			view: 'list'
+			history: []
 		};
 	}
 
@@ -47,7 +47,8 @@ class ViewerDocument implements vscode.CustomDocument {
 const viewerViewType = 'folderViewer.editor';
 
 let clipboardState: ClipboardState | undefined;
-const viewerPanels = new Set<vscode.WebviewPanel>();
+const viewerPanels = new Map<vscode.WebviewPanel, vscode.Uri>();
+const favoritesStorageKey = 'folderViewer.favorites';
 
 export function activate(context: vscode.ExtensionContext) {
 	const editorProvider: vscode.CustomReadonlyEditorProvider<ViewerDocument> = {
@@ -115,7 +116,7 @@ function configureViewerPanel(context: vscode.ExtensionContext, panel: vscode.We
 		]
 	};
 	panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'logo.svg');
-	viewerPanels.add(panel);
+	viewerPanels.set(panel, rootUri);
 	panel.onDidDispose(() => {
 		viewerPanels.delete(panel);
 		archiveOperations.forEach(operation => operation.cancelled = true);
@@ -135,8 +136,7 @@ function configureViewerPanel(context: vscode.ExtensionContext, panel: vscode.We
 					case 'stateChanged':
 						document.latestViewState = {
 							currentUri: getSafeUri(rootUri, message.currentUri).toString(),
-							history: message.history.map(uri => getSafeUri(rootUri, uri).toString()),
-							view: message.view
+							history: message.history.map(uri => getSafeUri(rootUri, uri).toString())
 						};
 						break;
 					case 'ready': {
@@ -154,6 +154,7 @@ function configureViewerPanel(context: vscode.ExtensionContext, panel: vscode.We
 						if (clipboardState) {
 							await sendClipboardState(panel.webview, clipboardState);
 						}
+						await sendFavorites(panel.webview, rootUri, getFavorites(context));
 						break;
 					}
 					case 'readDirectory': {
@@ -220,6 +221,23 @@ function configureViewerPanel(context: vscode.ExtensionContext, panel: vscode.We
 					case 'copyPath': {
 						const targetUris = message.uris.map(uri => getSafeUri(rootUri, uri));
 						await vscode.env.clipboard.writeText(targetUris.map(uri => uri.fsPath).join('\n'));
+						break;
+					}
+					case 'setFavorite': {
+						const targetUri = getSafeUri(rootUri, message.uri);
+						if (message.favorite) {
+							const stat = await vscode.workspace.fs.stat(targetUri);
+							if (!(stat.type & vscode.FileType.Directory)) {
+								throw new Error('Only folders can be added to favorites.');
+							}
+						}
+						const favorites = getFavorites(context);
+						const target = targetUri.toString();
+						const updatedFavorites = message.favorite
+							? [...new Set([...favorites, target])]
+							: favorites.filter(uri => uri !== target);
+						await context.globalState.update(favoritesStorageKey, updatedFavorites);
+						await broadcastFavorites(updatedFavorites);
 						break;
 					}
 					case 'openInNewWindow': {
@@ -308,7 +326,22 @@ function configureViewerPanel(context: vscode.ExtensionContext, panel: vscode.We
 }
 
 async function broadcastClipboardState(state: ClipboardState): Promise<void> {
-	await Promise.all([...viewerPanels].map(panel => sendClipboardState(panel.webview, state)));
+	await Promise.all([...viewerPanels.keys()].map(panel => sendClipboardState(panel.webview, state)));
+}
+
+async function broadcastFavorites(favorites: string[]): Promise<void> {
+	await Promise.all([...viewerPanels].map(([panel, rootUri]) => sendFavorites(panel.webview, rootUri, favorites)));
+}
+
+async function sendFavorites(webview: vscode.Webview, rootUri: vscode.Uri, favorites: string[]): Promise<void> {
+	await webview.postMessage({
+		type: 'favoritesChanged',
+		uris: favorites.filter(value => isUriWithinRoot(rootUri, value))
+	});
+}
+
+function getFavorites(context: vscode.ExtensionContext): string[] {
+	return context.globalState.get<string[]>(favoritesStorageKey, []);
 }
 
 async function sendClipboardState(webview: vscode.Webview, clipboardState: ClipboardState): Promise<void> {
@@ -326,14 +359,24 @@ function isFileNotFound(error: unknown): boolean {
 
 function getSafeUri(rootUri: vscode.Uri, value: string): vscode.Uri {
 	const candidate = vscode.Uri.parse(value);
-	const rootPath = rootUri.path.endsWith('/') ? rootUri.path : `${rootUri.path}/`;
-	if (
-		candidate.scheme !== rootUri.scheme
-		|| candidate.authority !== rootUri.authority
-		|| (candidate.path !== rootUri.path && !candidate.path.startsWith(rootPath))
-	) {
+	if (!isUriWithinRoot(rootUri, candidate)) {
 		throw new Error('The requested item is outside the opened folder.');
 	}
 	return candidate;
+}
+
+function isUriWithinRoot(rootUri: vscode.Uri, value: string | vscode.Uri): boolean {
+	let candidate: vscode.Uri;
+	try {
+		candidate = typeof value === 'string' ? vscode.Uri.parse(value, true) : value;
+	} catch {
+		return false;
+	}
+	const rootPath = rootUri.path.endsWith('/') ? rootUri.path : `${rootUri.path}/`;
+	return !(
+		candidate.scheme !== rootUri.scheme
+		|| candidate.authority !== rootUri.authority
+		|| (candidate.path !== rootUri.path && !candidate.path.startsWith(rootPath))
+	);
 }
 

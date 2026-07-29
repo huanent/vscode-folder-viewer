@@ -3,9 +3,13 @@
 	const elements = {
 		backButton: document.getElementById('backButton'),
 		refreshButton: document.getElementById('refreshButton'),
+		favoriteCurrentButton: document.getElementById('favoriteCurrentButton'),
+		showFavoritesButton: document.getElementById('showFavoritesButton'),
+		closeFavoritesButton: document.getElementById('closeFavoritesButton'),
+		favoritesPanel: document.getElementById('favoritesPanel'),
+		favoritesList: document.getElementById('favoritesList'),
+		favoritesEmptyState: document.getElementById('favoritesEmptyState'),
 		breadcrumbs: document.getElementById('breadcrumbs'),
-		listViewButton: document.getElementById('listViewButton'),
-		gridViewButton: document.getElementById('gridViewButton'),
 		columnHeader: document.getElementById('columnHeader'),
 		fileListRegion: document.getElementById('fileListRegion'),
 		fileList: document.getElementById('fileList'),
@@ -18,6 +22,7 @@
 		renameButton: document.getElementById('renameButton'),
 		openInNewWindowButton: document.getElementById('openInNewWindowButton'),
 		openInTerminalButton: document.getElementById('openInTerminalButton'),
+		favoriteButton: document.getElementById('favoriteButton'),
 		compressButton: document.getElementById('compressButton'),
 		extractButton: document.getElementById('extractButton'),
 		archiveSeparator: document.getElementById('archiveSeparator'),
@@ -42,13 +47,11 @@
 		history: previousState.rootUri === rootUri && Array.isArray(previousState.history)
 			? previousState.history
 			: initialHistory,
-		view: previousState.view === 'grid' || (!previousState.view && document.body.dataset.view === 'grid')
-			? 'grid'
-			: 'list',
 		contextEntry: null,
 		selectionAnchorUri: null,
 		hasClipboardEntry: false,
 		cutUris: new Set(),
+		favoriteUris: [],
 		archiveOperation: null
 	};
 
@@ -102,28 +105,73 @@
 
 	function render() {
 		renderBreadcrumbs();
+		renderFavorites();
 		elements.fileList.replaceChildren(...state.entries.map(createEntryElement));
-		elements.fileList.className = `file-list ${state.view}-view`;
-		elements.columnHeader.hidden = state.view !== 'list';
 		elements.emptyState.hidden = state.entries.length !== 0;
 		elements.status.hidden = true;
 		elements.backButton.disabled = state.history.length === 0;
-		updateViewButtons();
+		updateFavoriteCurrentButton();
 		saveState();
+	}
+
+	function renderFavorites() {
+		const items = state.favoriteUris.map(uri => {
+			const row = document.createElement('div');
+			row.className = 'favorite-item';
+			const relativePath = getRelativePath(uri);
+			const openButton = document.createElement('button');
+			openButton.type = 'button';
+			openButton.className = 'favorite-open-button';
+			openButton.title = relativePath;
+			const label = document.createElement('span');
+			label.textContent = relativePath;
+			openButton.append(label);
+			openButton.addEventListener('click', () => {
+				hideFavorites();
+				requestDirectory(uri, true);
+			});
+			row.append(openButton);
+			return row;
+		});
+		elements.favoritesList.replaceChildren(...items);
+		elements.favoritesEmptyState.hidden = items.length > 0;
+	}
+
+	function updateFavoriteCurrentButton() {
+		const favorite = state.favoriteUris.includes(state.currentUri);
+		const label = favorite ? 'Remove current folder from favorites' : 'Add current folder to favorites';
+		elements.favoriteCurrentButton.title = label;
+		elements.favoriteCurrentButton.setAttribute('aria-label', label);
+		elements.favoriteCurrentButton.setAttribute('aria-pressed', String(favorite));
+		elements.favoriteCurrentButton.classList.toggle('selected', favorite);
+		elements.favoriteCurrentButton.querySelector('.codicon').className = `codicon ${favorite ? 'codicon-star-full' : 'codicon-star-empty'}`;
+	}
+
+	function getRelativePath(uri) {
+		const rootPath = decodeURIComponent(new URL(state.rootUri).pathname).replace(/\/$/, '');
+		const favoritePath = decodeURIComponent(new URL(uri).pathname).replace(/\/$/, '');
+		return favoritePath === rootPath ? '.' : favoritePath.slice(rootPath.length + 1);
+	}
+
+	function setFavorite(uri, favorite) {
+		vscode.postMessage({ type: 'setFavorite', uri, favorite });
+	}
+
+	function hideFavorites() {
+		elements.favoritesPanel.hidden = true;
+		elements.showFavoritesButton.setAttribute('aria-expanded', 'false');
 	}
 
 	function saveState() {
 		vscode.setState({
 			rootUri: state.rootUri,
 			currentUri: state.currentUri,
-			history: state.history,
-			view: state.view
+			history: state.history
 		});
 		vscode.postMessage({
 			type: 'stateChanged',
 			currentUri: state.currentUri,
-			history: state.history,
-			view: state.view
+			history: state.history
 		});
 	}
 
@@ -326,6 +374,13 @@
 		);
 		elements.openInNewWindowButton.hidden = !canOpenFolder;
 		elements.openInTerminalButton.hidden = !canOpenFolder;
+		elements.favoriteButton.hidden = !canOpenFolder || !hasSelection;
+		if (!elements.favoriteButton.hidden) {
+			const favorite = state.favoriteUris.includes(selectedEntries[0].uri);
+			elements.favoriteButton.dataset.favorite = String(favorite);
+			elements.favoriteButton.querySelector('.codicon').className = `codicon ${favorite ? 'codicon-star-full' : 'codicon-star-empty'}`;
+			elements.favoriteButton.querySelector('span').textContent = favorite ? 'Remove from Favorites' : 'Add to Favorites';
+		}
 		const canExtract = selectedEntries.length === 1
 			&& selectedEntries[0].type === 'file'
 			&& selectedEntries[0].name.toLowerCase().endsWith('.zip');
@@ -344,19 +399,6 @@
 	function hideContextMenu() {
 		elements.contextMenu.hidden = true;
 		state.contextEntry = null;
-	}
-
-	function setView(view) {
-		state.view = view;
-		render();
-	}
-
-	function updateViewButtons() {
-		const isList = state.view === 'list';
-		elements.listViewButton.classList.toggle('selected', isList);
-		elements.gridViewButton.classList.toggle('selected', !isList);
-		elements.listViewButton.setAttribute('aria-pressed', String(isList));
-		elements.gridViewButton.setAttribute('aria-pressed', String(!isList));
 	}
 
 	function cutEntries(entries) {
@@ -463,8 +505,17 @@
 		}
 	});
 	elements.refreshButton.addEventListener('click', () => requestDirectory(state.currentUri, false));
-	elements.listViewButton.addEventListener('click', () => setView('list'));
-	elements.gridViewButton.addEventListener('click', () => setView('grid'));
+	elements.favoriteCurrentButton.addEventListener('click', () => {
+		setFavorite(state.currentUri, !state.favoriteUris.includes(state.currentUri));
+	});
+	elements.showFavoritesButton.addEventListener('click', event => {
+		event.stopPropagation();
+		const show = elements.favoritesPanel.hidden;
+		elements.favoritesPanel.hidden = !show;
+		elements.showFavoritesButton.setAttribute('aria-expanded', String(show));
+	});
+	elements.closeFavoritesButton.addEventListener('click', hideFavorites);
+	elements.favoritesPanel.addEventListener('click', event => event.stopPropagation());
 	elements.fileListRegion.addEventListener('click', event => {
 		if (!event.target.closest('.file-entry')) {
 			clearSelection();
@@ -502,6 +553,13 @@
 		openInTerminal(state.contextEntry);
 		hideContextMenu();
 	});
+	elements.favoriteButton.addEventListener('click', () => {
+		const entry = getSelectedEntries()[0];
+		if (entry?.type === 'directory') {
+			setFavorite(entry.uri, elements.favoriteButton.dataset.favorite !== 'true');
+		}
+		hideContextMenu();
+	});
 	elements.compressButton.addEventListener('click', () => {
 		compressEntries(getSelectedEntries());
 		hideContextMenu();
@@ -528,11 +586,15 @@
 		if (!elements.contextMenu.contains(event.target)) {
 			hideContextMenu();
 		}
+		if (!elements.favoritesPanel.contains(event.target) && !elements.showFavoritesButton.contains(event.target)) {
+			hideFavorites();
+		}
 	});
 	document.addEventListener('keydown', event => {
 		if (event.key === 'Escape') {
 			event.preventDefault();
 			hideContextMenu();
+			hideFavorites();
 			clearSelection();
 			return;
 		}
@@ -599,6 +661,10 @@
 			elements.fileList.querySelectorAll('.file-entry').forEach(item => {
 				item.classList.toggle('cut', state.cutUris.has(item.dataset.uri));
 			});
+		} else if (message.type === 'favoritesChanged') {
+			state.favoriteUris = message.uris;
+			renderFavorites();
+			updateFavoriteCurrentButton();
 		} else if (message.type === 'directorySize') {
 			const entry = state.entries.find(item => item.uri === message.uri);
 			if (entry) {
@@ -628,6 +694,5 @@
 			? element.dataset.mac
 			: element.dataset.other;
 	});
-	updateViewButtons();
 	vscode.postMessage({ type: 'ready', currentUri: state.currentUri });
 }());
