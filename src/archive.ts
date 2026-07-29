@@ -5,7 +5,7 @@ import { pipeline } from 'node:stream/promises';
 import * as vscode from 'vscode';
 import * as yauzl from 'yauzl';
 import * as yazl from 'yazl';
-import { confirmOverwrite, getDisplayName } from './fileOperations';
+import { confirmOverwrite, getDisplayName } from './filesystem/entry';
 
 const progressIntervalMs = 50;
 

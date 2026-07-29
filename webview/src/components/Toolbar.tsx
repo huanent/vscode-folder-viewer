@@ -15,7 +15,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 	}, [state.currentUri]);
 
 	return (
-		<header className="grid h-11.5 grid-cols-[auto_minmax(0,1fr)_28px] items-center gap-1 border-b border-border bg-app max-[600px]:grid-cols-[auto_minmax(0,1fr)] max-[600px]:gap-1.5 max-[600px]:px-2">
+		<header className="grid h-11.5 grid-cols-[auto_minmax(0,1fr)_28px] items-center gap-1 border-b border-border bg-app max-[600px]:gap-1.5 max-[600px]:px-2">
 			<div className="flex items-center gap-0.5" role="toolbar" aria-label="Navigation">
 				<IconButton icon="codicon-arrow-left" title="Back" aria-label="Back" disabled={!state.history.length} onClick={actions.navigateBack} />
 				<IconButton icon="codicon-refresh" title="Refresh" aria-label="Refresh" onClick={() => actions.requestDirectory(state.currentUri, false)} />
