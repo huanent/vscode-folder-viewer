@@ -1,38 +1,52 @@
-# Folder Viewer
+<div align="center">
+	<img src="resources/logo.png" alt="Folder Viewer logo" width="128">
+	<h1>Folder Viewer</h1>
+	<p>Browse and manage folders in full-size VS Code editor tabs.</p>
+</div>
 
-Explore and manage a folder in a full-size VS Code editor tab.
+Folder Viewer adds a file-manager view to the editor area without replacing the built-in Explorer. Each folder opens in an independent tab, giving you more space to browse files, compare folders, and perform common file operations without leaving VS Code.
 
-Folder Viewer provides a familiar file manager without replacing the built-in Explorer. Open any folder in its own tab, browse with breadcrumbs, and perform common file operations without leaving VS Code.
+![Folder Viewer running in VS Code](resources/screenshot.png)
 
 ## Features
 
-- Open multiple folders in independent editor tabs
-- Browse within the selected root folder using breadcrumbs and back navigation
-- Save favorite folders and jump back to them from the toolbar
-- View file creation time, modification time, and size
-- Calculate the size of individual folders or all folders in the current directory
-- Open files with their registered VS Code editor
-- Cut, copy, paste, rename, and delete files and folders
-- Copy one or more absolute paths
-- Open a folder in the integrated terminal
-- Compress files and folders into ZIP archives
-- Extract ZIP archives with progress and cancellation support
-- Use multi-selection and familiar keyboard shortcuts
+- **Editor tabs:** Open multiple folders in independent, full-size tabs.
+- **Navigation:** Move through folders with breadcrumbs, back navigation, refresh, and favorites.
+- **File details:** View creation time, modification time, and file size. Calculate folder sizes on demand.
+- **File operations:** Cut, copy, paste, rename, move to trash, permanently delete, and copy absolute paths.
+- **Folder actions:** Open a folder in another Folder Viewer tab, a new VS Code window, or the integrated terminal.
+- **ZIP archives:** Compress selected files and folders or extract ZIP files with progress and cancellation.
+- **Selection:** Use single, range, and multi-selection with familiar mouse and keyboard controls.
 
-## Getting Started
+## Open a Folder
 
-### From the Explorer
+| Method | Action |
+| --- | --- |
+| Explorer | Right-click a folder and select **Open in Folder Viewer**. |
+| Command Palette | Run **Open in Folder Viewer**, then choose a folder. |
+| Keyboard | Press `Cmd+Shift+;` on macOS or `Ctrl+Shift+;` on Windows and Linux to open your home folder. |
 
-1. Right-click a folder in the built-in VS Code Explorer.
-2. Select **Open in Folder Viewer**.
+Each Folder Viewer tab is limited to the folder it was opened with and its descendants.
 
-### From the Command Palette
+## Browse and Manage Files
 
-1. Open the Command Palette with `Cmd+Shift+P` on macOS or `Ctrl+Shift+P` on Windows and Linux.
-2. Run **Open in Folder Viewer**.
-3. Select the folder you want to browse.
+- Double-click a folder to enter it.
+- Double-click a file to open it with its registered VS Code editor.
+- Double-click a ZIP file to extract it.
+- Use the star in the path bar to add or remove the current folder from favorites.
+- Click the size button beside a folder to calculate its size. Hold `Cmd` on macOS or `Ctrl` on Windows and Linux while clicking to calculate all visible folder sizes.
+- Right-click an item or empty space to open the context menu.
 
-Double-click a folder to enter it or a file to open it. Right-click an item or the empty area for file operations and ZIP actions.
+### Context Menu
+
+Depending on the selection, the context menu provides:
+
+| Category | Actions |
+| --- | --- |
+| Clipboard | Cut, copy, paste, and copy absolute paths |
+| Item management | Rename, move to trash, or permanently delete by holding `Shift` while choosing **Delete** |
+| Folder tools | Open in a new Folder Viewer tab, open in a new VS Code window, or open in the integrated terminal |
+| Archives | Compress the selection to a ZIP file or extract a selected ZIP file |
 
 ## Keyboard Shortcuts
 
@@ -45,18 +59,12 @@ Double-click a folder to enter it or a file to open it. Right-click an item or t
 | Copy | `Cmd+C` | `Ctrl+C` |
 | Paste | `Cmd+V` | `Ctrl+V` |
 | Copy path | `Option+Cmd+C` | `Shift+Alt+C` |
-| Rename | `F2` or `Enter` | `F2` or `Enter` |
+| Rename selected item | `F2` or `Enter` | `F2` or `Enter` |
 | Move to trash | `Cmd+Backspace` | `Delete` |
 | Delete permanently | `Shift+Cmd+Backspace` | `Shift+Delete` |
 | Clear selection | `Escape` | `Escape` |
 
-To calculate every visible folder size, hold `Cmd` on macOS or `Ctrl` on Windows and Linux while clicking a folder's calculate-size button.
-
-## Development
-
-The extension host and React webview are separate TypeScript build targets. Run `npm run build` for a production build, or `npm run watch` to watch both targets together.
-
-The extension source is in `src`. The Vite, React, and Tailwind webview source is in `webview/src`, and its compiled runtime assets are written to `media`.
+Keyboard shortcuts apply while focus is inside the Folder Viewer tab.
 
 ## License
 
