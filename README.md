@@ -2,6 +2,9 @@
 	<img src="resources/logo.png" alt="Folder Viewer logo" width="128">
 	<h1>Folder Viewer</h1>
 	<p>Browse and manage folders in full-size VS Code editor tabs.</p>
+	<p>
+		<a href="https://marketplace.visualstudio.com/items?itemName=huanent.folder-viewer"><img src="https://badgen.net/vs-marketplace/v/huanent.folder-viewer" alt="Visual Studio Marketplace version"></a>
+	</p>
 </div>
 
 Folder Viewer adds a file-manager view to the editor area without replacing the built-in Explorer. Each folder opens in an independent tab, giving you more space to browse files, compare folders, and perform common file operations without leaving VS Code.
