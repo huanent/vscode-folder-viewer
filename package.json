@@ -20,18 +20,18 @@
     "workspace"
   ],
   "contributes": {
-  "customEditors": [
-    {
-    "viewType": "folderViewer.editor",
-    "displayName": "Folder Viewer",
-    "selector": [
+    "customEditors": [
       {
-      "filenamePattern": "*.folder-viewer"
+        "viewType": "folderViewer.editor",
+        "displayName": "Folder Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.folder-viewer"
+          }
+        ],
+        "priority": "option"
       }
     ],
-    "priority": "option"
-    }
-  ],
     "commands": [
       {
         "command": "folderViewer.open",
@@ -59,21 +59,30 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run build",
+    "build": "npm run compile && npm run compile:webview",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "compile:webview": "vite build",
     "publish": "vsce publish"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.1.1",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
     "@types/vscode": "^1.125.0",
     "@types/yauzl": "^3.4.0",
     "@types/yazl": "^3.3.1",
     "@vscode/vsce": "^3.9.2",
-    "typescript": "^7.0.2"
+    "@vitejs/plugin-react": "^6.0.4",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.5"
   },
   "dependencies": {
     "@vscode/codicons": "^0.0.45",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "yauzl": "^3.4.0",
     "yazl": "^3.3.1"
   }

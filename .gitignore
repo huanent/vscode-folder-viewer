@@ -79,6 +79,10 @@ build/Release
 # Dependency directories
 node_modules/
 jspm_packages/
+media/
+webview/src/**/*.js
+vite.config.js
+vite.config.js.map
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/

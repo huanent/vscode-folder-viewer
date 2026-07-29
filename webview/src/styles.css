@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+	--font-sans: var(--vscode-font-family);
+	--text-vscode: var(--vscode-font-size);
+	--color-app: var(--vscode-editor-background);
+	--color-foreground: var(--vscode-foreground);
+	--color-muted: var(--vscode-descriptionForeground);
+	--color-border: var(--vscode-panel-border);
+	--color-focus: var(--vscode-focusBorder);
+	--color-icon: var(--vscode-icon-foreground);
+	--color-folder: var(--vscode-symbolIcon-folderForeground, var(--vscode-icon-foreground));
+	--color-file: var(--vscode-symbolIcon-fileForeground, var(--vscode-icon-foreground));
+	--color-input: var(--vscode-input-background);
+	--color-input-border: var(--vscode-input-border, var(--vscode-widget-border, var(--vscode-panel-border)));
+	--color-toolbar-hover: var(--vscode-toolbar-hoverBackground);
+	--color-toolbar-active: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
+	--color-hover: var(--vscode-list-hoverBackground);
+	--color-hover-foreground: var(--vscode-list-hoverForeground);
+	--color-selection: var(--vscode-list-activeSelectionBackground);
+	--color-selection-foreground: var(--vscode-list-activeSelectionForeground);
+	--color-inactive-selection: var(--vscode-list-inactiveSelectionBackground);
+	--color-inactive-selection-foreground: var(--vscode-list-inactiveSelectionForeground, var(--vscode-foreground));
+	--color-breadcrumb: var(--vscode-breadcrumb-foreground);
+	--color-breadcrumb-focus: var(--vscode-breadcrumb-focusForeground);
+	--color-breadcrumb-active: var(--vscode-breadcrumb-activeSelectionForeground);
+	--color-breadcrumb-hover: var(--vscode-breadcrumbPicker-background);
+	--color-menu: var(--vscode-menu-background);
+	--color-menu-foreground: var(--vscode-menu-foreground);
+	--color-menu-selection: var(--vscode-menu-selectionBackground);
+	--color-menu-selection-foreground: var(--vscode-menu-selectionForeground);
+	--color-menu-border: var(--vscode-menu-border, var(--vscode-panel-border));
+	--color-menu-separator: var(--vscode-menu-separatorBackground, var(--vscode-panel-border));
+	--color-widget-border: var(--vscode-widget-border, var(--vscode-panel-border));
+	--color-button: var(--vscode-button-background);
+	--color-button-foreground: var(--vscode-button-foreground);
+	--color-button-hover: var(--vscode-button-hoverBackground);
+	--color-notification: var(--vscode-notifications-background);
+	--color-progress-track: var(--vscode-progressBar-background, var(--vscode-panel-border));
+	--shadow-widget: 0 4px 16px var(--vscode-widget-shadow);
+	--shadow-menu: 0 2px 8px var(--vscode-widget-shadow);
+}
+
+@layer base {
+	* {
+		box-sizing: border-box;
+	}
+
+	html,
+	body,
+	#root {
+		width: 100%;
+		min-width: 300px;
+		height: 100%;
+		margin: 0;
+		overflow: hidden;
+	}
+
+	body {
+		color: var(--color-foreground);
+		background: var(--color-app);
+		font-family: var(--font-sans);
+		font-size: var(--text-vscode);
+		user-select: none;
+	}
+
+	button {
+		font: inherit;
+	}
+}
+
+@utility file-grid {
+	display: grid;
+	grid-template-columns: minmax(180px, 1fr) minmax(150px, 210px) minmax(150px, 210px) 90px;
+	align-items: center;
+	column-gap: 16px;
+	padding-inline: 10px;
+}
+
+@media (max-width: 600px) {
+	.file-grid {
+		grid-template-columns: minmax(140px, 1fr) 72px;
+	}
+
+	.file-grid > :is(:nth-child(2), :nth-child(3)) {
+		display: none;
+	}
+}

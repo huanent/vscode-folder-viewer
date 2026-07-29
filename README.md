@@ -52,6 +52,12 @@ Double-click a folder to enter it or a file to open it. Right-click an item or t
 
 To calculate every visible folder size, hold `Cmd` on macOS or `Ctrl` on Windows and Linux while clicking a folder's calculate-size button.
 
+## Development
+
+The extension host and React webview are separate TypeScript build targets. Run `npm run build` for a production build, or `npm run watch` to watch both targets together.
+
+The extension source is in `src`. The Vite, React, and Tailwind webview source is in `webview/src`, and its compiled runtime assets are written to `media`.
+
 ## License
 
 [MIT](LICENSE.txt)
