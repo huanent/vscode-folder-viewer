@@ -1,17 +1,20 @@
+import { useState } from 'react';
 import type { FolderViewerModel } from '../hooks/useFolderViewer';
 import { getRelativePath } from '../lib/formatters';
+import { FavoritesContextMenu } from './FavoritesContextMenu';
 import { IconButton } from './IconButton';
 
 type FavoritesPanelProps = Pick<FolderViewerModel, 'state' | 'actions'>;
 
 export function FavoritesPanel({ state, actions }: FavoritesPanelProps) {
+	const [contextMenu, setContextMenu] = useState<{ uri: string; x: number; y: number } | null>(null);
 	if (!state.favoritesOpen) return null;
 
 	return (
 		<section
 			className="fixed top-11 right-1 z-10 max-h-[min(420px,calc(100%-64px))] w-[min(340px,calc(100%-24px))] overflow-y-auto rounded border border-widget-border bg-menu p-1.5 shadow-widget max-[600px]:right-auto max-[600px]:left-3"
 			aria-label="Favorites"
-			onClick={event => event.stopPropagation()}
+			onClick={event => { event.stopPropagation(); setContextMenu(null); }}
 		>
 			<div className="flex h-7.5 items-center justify-between pl-2 text-xs font-semibold text-muted">
 				<span>Favorites</span>
@@ -22,7 +25,8 @@ export function FavoritesPanel({ state, actions }: FavoritesPanelProps) {
 			) : state.favoriteUris.map(uri => {
 				const relativePath = getRelativePath(state.rootUri, uri);
 				const parts = relativePath.split('/');
-				const name = parts.pop();
+				const customName = state.favoriteNames[uri];
+				const name = customName ?? parts.pop();
 				const parent = parts.join('/');
 				return (
 					<button
@@ -34,15 +38,26 @@ export function FavoritesPanel({ state, actions }: FavoritesPanelProps) {
 							actions.setFavoritesOpen(false);
 							actions.requestDirectory(uri, true);
 						}}
+						onContextMenu={event => {
+							event.preventDefault();
+							event.stopPropagation();
+							setContextMenu({ uri, x: event.clientX, y: event.clientY });
+						}}
 					>
 						<i className="codicon codicon-folder shrink-0 text-base text-folder" />
 						<span className="grid min-w-0 gap-0.5">
 							<span className="overflow-hidden font-semibold text-ellipsis whitespace-nowrap">{name}</span>
-							{parent && <span className="overflow-hidden text-[11px] text-muted text-ellipsis whitespace-nowrap">{parent}</span>}
+							{!customName && parent && <span className="overflow-hidden text-[11px] text-muted text-ellipsis whitespace-nowrap">{parent}</span>}
 						</span>
 					</button>
 				);
 			})}
+			{contextMenu && <FavoritesContextMenu
+				x={contextMenu.x}
+				y={contextMenu.y}
+				onRename={() => { actions.renameFavorite(contextMenu.uri); setContextMenu(null); }}
+				onDelete={() => { actions.setFavorite(contextMenu.uri, false); setContextMenu(null); }}
+			/>}
 		</section>
 	);
 }

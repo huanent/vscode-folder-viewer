@@ -101,6 +101,9 @@ export class ViewerPanelController implements vscode.Disposable {
 			case 'setFavorite':
 				await this.setFavorite(message.uri, message.favorite);
 				return;
+			case 'renameFavorite':
+				await this.manager.renameFavorite(getSafeUri(rootUri, message.uri));
+				return;
 			case 'openInNewTab':
 				await this.openDirectory(
 					message.uri,

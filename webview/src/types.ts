@@ -9,6 +9,11 @@ export interface FileEntry {
 	calculating?: boolean;
 }
 
+export interface FavoriteEntry {
+	uri: string;
+	name?: string;
+}
+
 export interface PersistedState {
 	rootUri: string;
 	currentUri: string;

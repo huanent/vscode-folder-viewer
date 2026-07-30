@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useState } from 'react';
-import type { ArchiveOperation, ContextMenuState, FileEntry, PersistedState } from '../types';
+import type { ArchiveOperation, ContextMenuState, FavoriteEntry, FileEntry, PersistedState } from '../types';
 import { vscode } from '../services/vscode';
 
 interface DirectoryMessage {
@@ -15,7 +15,7 @@ type InboundMessage =
 	| { type: 'deleted' | 'pasted' | 'renamed' }
 	| { type: 'compressed' | 'extracted' | 'archiveCancelled' | 'archiveDismissed'; operationId: string }
 	| { type: 'clipboardChanged'; hasEntry: boolean; operation: 'cut' | 'copy'; uris: string[] }
-	| { type: 'favoritesChanged'; uris: string[] }
+	| { type: 'favoritesChanged'; favorites: FavoriteEntry[] }
 	| { type: 'directorySize'; uri: string; size: number }
 	| { type: 'directorySizeError'; uri: string; message: string }
 	| { type: 'error'; message: string; operationId?: string };
@@ -45,6 +45,7 @@ export function useFolderViewer(rootElement: HTMLElement) {
 	const [selectedUris, setSelectedUris] = useState<Set<string>>(new Set());
 	const [selectionAnchorUri, setSelectionAnchorUri] = useState<string | null>(null);
 	const [favoriteUris, setFavoriteUris] = useState<string[]>([]);
+	const [favoriteNames, setFavoriteNames] = useState<Record<string, string>>({});
 	const [favoritesOpen, setFavoritesOpen] = useState(false);
 	const [hasClipboardEntry, setHasClipboardEntry] = useState(false);
 	const [cutUris, setCutUris] = useState<Set<string>>(new Set());
@@ -191,7 +192,8 @@ export function useFolderViewer(rootElement: HTMLElement) {
 				setHasClipboardEntry(message.hasEntry);
 				setCutUris(new Set(message.operation === 'cut' ? message.uris : []));
 			} else if (message.type === 'favoritesChanged') {
-				setFavoriteUris(message.uris);
+				setFavoriteUris(message.favorites.map(favorite => favorite.uri));
+				setFavoriteNames(Object.fromEntries(message.favorites.flatMap(favorite => favorite.name ? [[favorite.uri, favorite.name]] : [])));
 			} else if (message.type === 'directorySize') {
 				setEntries(current => current.map(entry => entry.uri === message.uri
 					? { ...entry, calculating: false, calculatedSize: message.size }
@@ -240,11 +242,12 @@ export function useFolderViewer(rootElement: HTMLElement) {
 	}, [entries, selectedUris, hasClipboardEntry, currentUri]);
 
 	return {
-		state: { rootUri, currentUri, history, entries, selectedUris, selectedEntries, favoriteUris, favoritesOpen, hasClipboardEntry, cutUris, contextMenu, archiveOperation, status },
+		state: { rootUri, currentUri, history, entries, selectedUris, selectedEntries, favoriteUris, favoriteNames, favoritesOpen, hasClipboardEntry, cutUris, contextMenu, archiveOperation, status },
 		actions: {
 			requestDirectory, navigateBack, openEntry, selectEntry, clearSelection, showContextMenu,
 			closeContextMenu: () => setContextMenu(null), setFavoritesOpen,
 			setFavorite: (uri: string, favorite: boolean) => vscode.postMessage({ type: 'setFavorite', uri, favorite }),
+			renameFavorite: (uri: string) => vscode.postMessage({ type: 'renameFavorite', uri }),
 			cut: () => postForSelection('setClipboard', 'cut'), copy: () => postForSelection('setClipboard', 'copy'),
 			copyPath: () => postForSelection('copyPath'), delete: (permanent: boolean) => postForSelection('delete', permanent),
 			paste, renameSelected, openFolder, startArchive, calculateSize,
