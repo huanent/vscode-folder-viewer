@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	root: 'webview',
+	base: './',
 	plugins: [react(), tailwindcss()],
 	build: {
 		outDir: '../media',
