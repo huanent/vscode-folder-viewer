@@ -28,12 +28,13 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 							<button
 								type="button"
 								title={crumb.label}
+								aria-label={crumb.label}
 								aria-current={index === crumbs.length - 1 ? 'page' : undefined}
 								disabled={index === crumbs.length - 1}
-								className="max-w-55 shrink-0 cursor-pointer overflow-hidden rounded-sm border-0 bg-transparent px-1.25 py-0.5 text-breadcrumb text-ellipsis whitespace-nowrap hover:bg-breadcrumb-hover hover:text-breadcrumb-focus focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-focus disabled:cursor-default disabled:font-semibold disabled:text-breadcrumb-active"
+								className="flex max-w-55 shrink-0 cursor-pointer items-center overflow-hidden rounded-sm border-0 bg-transparent px-1.25 py-0.5 text-breadcrumb text-ellipsis whitespace-nowrap hover:bg-breadcrumb-hover hover:text-breadcrumb-focus focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-focus disabled:cursor-default disabled:font-semibold disabled:text-breadcrumb-active"
 								onClick={() => actions.requestDirectory(crumb.uri, true)}
 							>
-								{crumb.label}
+								{index === 0 ? '/' : crumb.label}
 							</button>
 						</span>
 					))}
@@ -67,7 +68,7 @@ function getBreadcrumbs(rootUri: string, currentUri: string) {
 	const current = new URL(currentUri);
 	const rootParts = decodeURIComponent(root.pathname).split('/').filter(Boolean);
 	const relativeParts = decodeURIComponent(current.pathname).split('/').filter(Boolean).slice(rootParts.length);
-	const labels = [rootParts.at(-1) || decodeURIComponent(root.pathname), ...relativeParts];
+	const labels = [rootParts.at(-1) || '/', ...relativeParts];
 	return labels.map((label, index) => {
 		const target = new URL(rootUri);
 		target.pathname = `/${[...rootParts, ...relativeParts.slice(0, index)].join('/')}`;

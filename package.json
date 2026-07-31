@@ -45,17 +45,13 @@
       {
         "command": "folderViewer.open",
         "key": "ctrl+shift+;",
-        "mac": "cmd+shift+;",
-        "args": {
-          "openHomeDirectory": true
-        }
+        "mac": "cmd+shift+;"
       }
     ],
     "menus": {
       "explorer/context": [
         {
           "command": "folderViewer.open",
-          "when": "explorerResourceIsFolder",
           "group": "navigation@999"
         }
       ]

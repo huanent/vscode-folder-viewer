@@ -26,11 +26,12 @@ interface InitialState extends PersistedState {
 
 function getInitialState(rootElement: HTMLElement): InitialState {
 	const rootUri = rootElement.dataset.rootUri ?? '';
+	const currentUri = rootElement.dataset.currentUri ?? rootUri;
 	const savedState = vscode.getState();
-	const persisted = savedState?.rootUri === rootUri ? savedState : undefined;
+	const persisted = savedState?.rootUri === rootUri && savedState.currentUri === currentUri ? savedState : undefined;
 	return {
 		rootUri,
-		currentUri: persisted?.currentUri ?? rootElement.dataset.currentUri ?? rootUri,
+		currentUri: persisted?.currentUri ?? currentUri,
 		history: persisted?.history ?? JSON.parse(rootElement.dataset.history ?? '[]'),
 		entries: []
 	};

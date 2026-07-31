@@ -161,6 +161,7 @@ export class ViewerPanelController implements vscode.Disposable {
 	}
 
 	private async sendDirectory(directoryUri: vscode.Uri): Promise<void> {
+		this.panel.title = getDisplayName(directoryUri);
 		await this.panel.webview.postMessage({
 			type: 'directory',
 			rootUri: this.document.rootUri.toString(),

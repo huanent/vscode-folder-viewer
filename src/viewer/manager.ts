@@ -106,9 +106,10 @@ export class ViewerManager implements vscode.Disposable {
 		initialViewState?: ViewerDocument['latestViewState']
 	): Promise<void> {
 		const folderName = getDisplayName(rootUri);
+		const resourceName = folderName === '/' ? 'root' : folderName;
 		const resourceUri = vscode.Uri.from({
 			scheme: 'folder-viewer',
-			path: `/${folderName}`,
+			path: `/${resourceName}`,
 			query: new URLSearchParams({ root: rootUri.toString(), id: randomUUID() }).toString()
 		});
 		if (initialViewState) {
