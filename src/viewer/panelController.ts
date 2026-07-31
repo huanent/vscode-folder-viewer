@@ -5,7 +5,7 @@ import { getDisplayName } from '../filesystem/entry';
 import { createDirectory, deleteEntries, pasteEntries, renameEntry } from '../filesystem/operations';
 import { getWebviewHtml } from '../webview';
 import { ViewerDocument } from './document';
-import type { ViewerManager } from './manager';
+import { webviewFocusContextKey, type ViewerManager } from './manager';
 import { WebviewMessage } from './messages';
 import { getSafeUri } from './uri';
 
@@ -31,10 +31,16 @@ export class ViewerPanelController implements vscode.Disposable {
 		};
 		panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'logo.svg');
 		this.disposables.push(panel.webview.onDidReceiveMessage(message => this.handleMessage(message)));
+		this.disposables.push(panel.onDidChangeViewState(event => {
+			if (!event.webviewPanel.active) {
+				void this.setWebviewFocus(false);
+			}
+		}));
 		panel.webview.html = getWebviewHtml(panel.webview, context.extensionUri, rootUri, folderName, document.latestViewState);
 	}
 
 	dispose(): void {
+		void this.setWebviewFocus(false);
 		this.archiveOperations.forEach(operation => operation.cancelled = true);
 		this.cancelDirectorySizeOperations();
 		this.disposables.forEach(disposable => disposable.dispose());
@@ -59,6 +65,9 @@ export class ViewerPanelController implements vscode.Disposable {
 	private async dispatchMessage(message: WebviewMessage): Promise<void> {
 		const rootUri = this.document.rootUri;
 		switch (message.type) {
+			case 'focusChanged':
+				await this.setWebviewFocus(message.focused);
+				return;
 			case 'cancelOperation':
 				this.cancelArchiveOperation(message.operationId);
 				return;
@@ -141,6 +150,10 @@ export class ViewerPanelController implements vscode.Disposable {
 				return;
 			}
 		}
+	}
+
+	private setWebviewFocus(focused: boolean): Thenable<unknown> {
+		return vscode.commands.executeCommand('setContext', webviewFocusContextKey, focused && this.panel.active);
 	}
 
 	private async createDirectory(parentValue: string): Promise<void> {

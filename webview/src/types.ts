@@ -32,4 +32,5 @@ export interface ContextMenuState {
 	x: number;
 	y: number;
 	entry: FileEntry | null;
+	directoryUri?: string;
 }

@@ -129,12 +129,26 @@ export function useFolderViewer(rootElement: HTMLElement) {
 		setContextMenu({ x: event.clientX, y: event.clientY, entry });
 	}
 
+	function showDirectoryContextMenu(event: React.MouseEvent, directoryUri: string) {
+		event.preventDefault();
+		event.stopPropagation();
+		setContextMenu({ x: event.clientX, y: event.clientY, entry: null, directoryUri });
+	}
+
 	function postForSelection(type: 'setClipboard' | 'copyPath' | 'delete', option?: 'cut' | 'copy' | boolean) {
 		const uris = selectedEntries.map(entry => entry.uri);
 		if (!uris.length) return;
 		if (type === 'setClipboard') vscode.postMessage({ type, uris, operation: option as 'cut' | 'copy' });
 		if (type === 'copyPath') vscode.postMessage({ type, uris });
 		if (type === 'delete') vscode.postMessage({ type, uris, permanent: Boolean(option) });
+	}
+
+	function copyPath(uri?: string) {
+		if (uri) {
+			vscode.postMessage({ type: 'copyPath', uris: [uri] });
+			return;
+		}
+		postForSelection('copyPath');
 	}
 
 	function renameSelected() {
@@ -151,12 +165,7 @@ export function useFolderViewer(rootElement: HTMLElement) {
 
 	function openFolder(type: 'openInNewTab' | 'openInNewWindow' | 'openInTerminal') {
 		const entry = contextMenu?.entry;
-		vscode.postMessage({ type, uri: entry?.type === 'directory' ? entry.uri : currentUri });
-	}
-
-	function openSelectionInNewTab() {
-		const target = selectedEntries.length === 1 && selectedEntries[0].type === 'directory' ? selectedEntries[0].uri : currentUri;
-		vscode.postMessage({ type: 'openInNewTab', uri: target });
+		vscode.postMessage({ type, uri: contextMenu?.directoryUri ?? (entry?.type === 'directory' ? entry.uri : currentUri) });
 	}
 
 	function startArchive(kind: 'compress' | 'extract', targets = selectedEntries) {
@@ -219,8 +228,17 @@ export function useFolderViewer(rootElement: HTMLElement) {
 
 	useEffect(() => {
 		window.addEventListener('message', onMessage);
+		const onFocus = () => vscode.postMessage({ type: 'focusChanged', focused: true });
+		const onBlur = () => vscode.postMessage({ type: 'focusChanged', focused: false });
+		window.addEventListener('focus', onFocus);
+		window.addEventListener('blur', onBlur);
 		vscode.postMessage({ type: 'ready', currentUri: initial.currentUri });
-		return () => window.removeEventListener('message', onMessage);
+		vscode.postMessage({ type: 'focusChanged', focused: document.hasFocus() });
+		return () => {
+			window.removeEventListener('message', onMessage);
+			window.removeEventListener('focus', onFocus);
+			window.removeEventListener('blur', onBlur);
+		};
 	}, []);
 
 	useEffect(() => {
@@ -238,7 +256,6 @@ export function useFolderViewer(rootElement: HTMLElement) {
 				else if (key === 'x' && selectedEntries.length) { event.preventDefault(); postForSelection('setClipboard', 'cut'); }
 				else if (key === 'c' && selectedEntries.length) { event.preventDefault(); postForSelection('setClipboard', 'copy'); }
 				else if (key === 'r') { event.preventDefault(); requestDirectory(currentUri, false); }
-				else if (key === 't') { event.preventDefault(); openSelectionInNewTab(); }
 				else if (key === 'v' && hasClipboardEntry) { event.preventDefault(); paste(); }
 				else if (event.metaKey && event.key === 'Backspace' && selectedEntries.length) { event.preventDefault(); postForSelection('delete', event.shiftKey); }
 			} else if (event.altKey && event.key.toLowerCase() === 'c' && (event.metaKey || event.shiftKey) && selectedEntries.length) {
@@ -256,12 +273,12 @@ export function useFolderViewer(rootElement: HTMLElement) {
 	return {
 		state: { rootUri, currentUri, history, entries, selectedUris, selectedEntries, favoriteUris, favoriteNames, favoritesOpen, hasClipboardEntry, cutUris, contextMenu, archiveOperation, status },
 		actions: {
-			requestDirectory, navigateBack, openEntry, selectEntry, clearSelection, showContextMenu,
+			requestDirectory, navigateBack, openEntry, selectEntry, clearSelection, showContextMenu, showDirectoryContextMenu,
 			closeContextMenu: () => setContextMenu(null), setFavoritesOpen,
 			setFavorite: (uri: string, favorite: boolean) => vscode.postMessage({ type: 'setFavorite', uri, favorite }),
 			renameFavorite: (uri: string) => vscode.postMessage({ type: 'renameFavorite', uri }),
 			cut: () => postForSelection('setClipboard', 'cut'), copy: () => postForSelection('setClipboard', 'copy'),
-			copyPath: () => postForSelection('copyPath'), delete: (permanent: boolean) => postForSelection('delete', permanent),
+			copyPath, delete: (permanent: boolean) => postForSelection('delete', permanent),
 			paste, createDirectory, renameSelected, openFolder, startArchive, calculateSize,
 			cancelArchive: () => setArchiveOperation(current => {
 				if (!current || current.cancelling) return current;

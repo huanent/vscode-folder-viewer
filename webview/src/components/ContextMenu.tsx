@@ -6,8 +6,9 @@ type ContextMenuProps = Pick<FolderViewerModel, 'state' | 'actions'>;
 
 export function ContextMenu({ state, actions }: ContextMenuProps) {
 	if (!state.contextMenu) return null;
+	const directoryOnly = Boolean(state.contextMenu.directoryUri);
 	const selection = state.selectedEntries;
-	const hasSelection = selection.length > 0;
+	const hasSelection = !directoryOnly && selection.length > 0;
 	const canOpenFolder = !hasSelection || (selection.length === 1 && selection[0].type === 'directory' && selection[0].uri === state.contextMenu.entry?.uri);
 	const canOpenTerminal = !hasSelection || (selection.length === 1 && selection[0].uri === state.contextMenu.entry?.uri);
 	const canExtract = selection.length === 1 && selection[0].type === 'file' && selection[0].name.toLowerCase().endsWith('.zip');
@@ -17,6 +18,14 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 
 	return (
 		<div className="fixed z-20 min-w-48 rounded border border-menu-border bg-menu p-1 shadow-menu" role="menu" style={{ left, top }} onClick={event => event.stopPropagation()}>
+			{directoryOnly && <>
+				<MenuItem icon="codicon-copy" label="Copy Path" onClick={closeAfter(() => actions.copyPath(state.contextMenu?.directoryUri))} />
+				<Separator />
+				<MenuItem icon="codicon-file-symlink-directory" label="Open in New Tab" onClick={closeAfter(() => actions.openFolder('openInNewTab'))} />
+				<MenuItem icon="codicon-open-in-window" label="Open in New Window" onClick={closeAfter(() => actions.openFolder('openInNewWindow'))} />
+				<MenuItem icon="codicon-terminal" label="Open in Terminal" onClick={closeAfter(() => actions.openFolder('openInTerminal'))} />
+			</>}
+			{!directoryOnly && <>
 			<MenuItem icon="codicon-screen-cut" label="Cut" shortcut={shortcut('⌘X', 'Ctrl+X')} disabled={!hasSelection} onClick={closeAfter(actions.cut)} />
 			<MenuItem icon="codicon-copy" label="Copy" shortcut={shortcut('⌘C', 'Ctrl+C')} disabled={!hasSelection} onClick={closeAfter(actions.copy)} />
 			<MenuItem icon="codicon-clippy" label="Paste" shortcut={shortcut('⌘V', 'Ctrl+V')} disabled={!state.hasClipboardEntry} onClick={closeAfter(() => actions.paste(state.contextMenu?.entry?.type === 'directory' ? state.contextMenu.entry.uri : state.currentUri))} />
@@ -33,6 +42,7 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 			{hasSelection && !canExtract && <MenuItem icon="codicon-file-zip" label="Compress to ZIP" onClick={closeAfter(() => actions.startArchive('compress'))} />}
 			{canExtract && <MenuItem icon="codicon-file-zip" label="Extract ZIP" onClick={closeAfter(() => actions.startArchive('extract'))} />}
 			<MenuItem icon="codicon-trash" label="Delete" shortcut={shortcut('⌘⌫', 'Delete')} disabled={!hasSelection} onClick={event => { actions.delete(event.shiftKey); actions.closeContextMenu(); }} />
+			</>}
 		</div>
 	);
 }

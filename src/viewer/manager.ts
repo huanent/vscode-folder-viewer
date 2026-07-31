@@ -9,6 +9,7 @@ import { isUriWithinRoot } from './uri';
 const viewerViewType = 'folderViewer.editor';
 const favoritesStorageKey = 'folderViewer.favorites';
 const favoriteNamesStorageKey = 'folderViewer.favoriteNames';
+export const webviewFocusContextKey = 'folderViewer.webviewFocus';
 
 type PanelEntry = {
 	rootUri: vscode.Uri;
