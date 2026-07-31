@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import type { FileEntry } from './filesystem/directoryService';
 
 export interface ViewerViewState {
 	currentUri: string;
@@ -10,7 +11,8 @@ export function getWebviewHtml(
 	extensionUri: vscode.Uri,
 	rootUri: vscode.Uri,
 	folderName: string,
-	initialViewState: ViewerViewState
+	initialViewState: ViewerViewState,
+	initialEntries: FileEntry[]
 ): string {
 	const nonce = getNonce();
 	const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'explorer.css'));
@@ -31,6 +33,7 @@ export function getWebviewHtml(
 		data-root-uri="${escapeHtml(rootUri.toString())}"
 		data-current-uri="${escapeHtml(initialViewState.currentUri)}"
 		data-history="${escapeHtml(JSON.stringify(initialViewState.history))}"
+		data-entries="${escapeHtml(JSON.stringify(initialEntries))}"
 	></div>
 	<script nonce="${nonce}" type="module" src="${scriptUri}"></script>
 </body>

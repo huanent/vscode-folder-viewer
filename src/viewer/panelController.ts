@@ -21,7 +21,8 @@ export class ViewerPanelController implements vscode.Disposable {
 		private readonly document: ViewerDocument
 	) {
 		const rootUri = document.rootUri;
-		const folderName = getDisplayName(rootUri);
+		const currentUri = getSafeUri(rootUri, document.latestViewState.currentUri);
+		const folderName = getDisplayName(currentUri);
 		panel.title = folderName;
 		panel.webview.options = {
 			enableScripts: true,
@@ -36,7 +37,7 @@ export class ViewerPanelController implements vscode.Disposable {
 				void this.setWebviewFocus(false);
 			}
 		}));
-		panel.webview.html = getWebviewHtml(panel.webview, context.extensionUri, rootUri, folderName, document.latestViewState);
+		void this.initializeWebview(context.extensionUri, rootUri, currentUri, folderName);
 	}
 
 	dispose(): void {
@@ -59,6 +60,26 @@ export class ViewerPanelController implements vscode.Disposable {
 				message: error instanceof Error ? error.message : String(error),
 				operationId: 'operationId' in message ? message.operationId : undefined
 			});
+		}
+	}
+
+	private async initializeWebview(
+		extensionUri: vscode.Uri,
+		rootUri: vscode.Uri,
+		currentUri: vscode.Uri,
+		folderName: string
+	): Promise<void> {
+		try {
+			const initialEntries = await readDirectory(currentUri);
+			this.panel.webview.html = getWebviewHtml(this.panel.webview, extensionUri, rootUri, folderName, this.document.latestViewState, initialEntries);
+		} catch (error) {
+			if (currentUri.toString() === rootUri.toString() || !isFileNotFound(error)) {
+				throw error;
+			}
+			const initialEntries = await readDirectory(rootUri);
+			this.document.latestViewState = { currentUri: rootUri.toString(), history: [] };
+			this.panel.title = getDisplayName(rootUri);
+			this.panel.webview.html = getWebviewHtml(this.panel.webview, extensionUri, rootUri, getDisplayName(rootUri), this.document.latestViewState, initialEntries);
 		}
 	}
 

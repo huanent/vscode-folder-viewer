@@ -33,7 +33,7 @@ function getInitialState(rootElement: HTMLElement): InitialState {
 		rootUri,
 		currentUri: persisted?.currentUri ?? currentUri,
 		history: persisted?.history ?? JSON.parse(rootElement.dataset.history ?? '[]'),
-		entries: []
+		entries: JSON.parse(rootElement.dataset.entries ?? '[]')
 	};
 }
 

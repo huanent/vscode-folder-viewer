@@ -2,6 +2,7 @@ import type { PersistedState } from '../types';
 
 export type OutboundMessage =
 	| { type: 'ready'; currentUri: string }
+	| { type: 'focusChanged'; focused: boolean }
 	| { type: 'stateChanged'; currentUri: string; history: string[] }
 	| { type: 'readDirectory'; uri: string }
 	| { type: 'openFile'; uri: string }

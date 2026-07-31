@@ -19,7 +19,6 @@ type PanelEntry = {
 export class ViewerManager implements vscode.Disposable {
 	private clipboardState: ClipboardState | undefined;
 	private readonly panels = new Map<vscode.WebviewPanel, PanelEntry>();
-	private readonly initialViewStates = new Map<string, ViewerDocument['latestViewState']>();
 	private readonly disposables: vscode.Disposable[] = [];
 
 	constructor(private readonly context: vscode.ExtensionContext) { }
@@ -108,17 +107,16 @@ export class ViewerManager implements vscode.Disposable {
 	): Promise<void> {
 		const folderName = getDisplayName(rootUri);
 		const resourceName = folderName === '/' ? 'root' : folderName;
+		const query = new URLSearchParams({ root: rootUri.toString(), id: randomUUID() });
+		if (initialViewState) {
+			query.set('current', initialViewState.currentUri);
+			query.set('history', JSON.stringify(initialViewState.history));
+		}
 		const resourceUri = vscode.Uri.from({
 			scheme: 'folder-viewer',
 			path: `/${resourceName}`,
-			query: new URLSearchParams({ root: rootUri.toString(), id: randomUUID() }).toString()
+			query: query.toString()
 		});
-		if (initialViewState) {
-			this.initialViewStates.set(resourceUri.toString(), {
-				currentUri: initialViewState.currentUri,
-				history: [...initialViewState.history]
-			});
-		}
 		await vscode.commands.executeCommand('vscode.openWith', resourceUri, viewerViewType, {
 			preview: false,
 			viewColumn
@@ -131,10 +129,12 @@ export class ViewerManager implements vscode.Disposable {
 			throw new Error('The folder viewer resource does not contain a root folder.');
 		}
 		const document = new ViewerDocument(uri, vscode.Uri.parse(rootValue));
-		const initialViewState = this.initialViewStates.get(uri.toString());
-		if (initialViewState) {
-			document.latestViewState = initialViewState;
-			this.initialViewStates.delete(uri.toString());
+		const currentValue = new URLSearchParams(uri.query).get('current');
+		if (currentValue) {
+			document.latestViewState = {
+				currentUri: currentValue,
+				history: parseHistory(uri)
+			};
 		}
 		return document;
 	}
@@ -208,5 +208,18 @@ export class ViewerManager implements vscode.Disposable {
 		return favorites
 			.filter(value => isUriWithinRoot(rootUri, value))
 			.map(uri => ({ uri, name: names[uri] }));
+	}
+}
+
+function parseHistory(uri: vscode.Uri): string[] {
+	const historyValue = new URLSearchParams(uri.query).get('history');
+	if (!historyValue) {
+		return [];
+	}
+	try {
+		const history = JSON.parse(historyValue);
+		return Array.isArray(history) && history.every(item => typeof item === 'string') ? history : [];
+	} catch {
+		return [];
 	}
 }
