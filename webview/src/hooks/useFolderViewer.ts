@@ -12,7 +12,7 @@ interface DirectoryMessage {
 type InboundMessage =
 	| DirectoryMessage
 	| { type: 'archiveProgress'; operationId: string; percent: number; detail: string }
-	| { type: 'deleted' | 'pasted' | 'renamed' }
+	| { type: 'createdDirectory' | 'deleted' | 'pasted' | 'renamed' }
 	| { type: 'compressed' | 'extracted' | 'archiveCancelled' | 'archiveDismissed'; operationId: string }
 	| { type: 'clipboardChanged'; hasEntry: boolean; operation: 'cut' | 'copy'; uris: string[] }
 	| { type: 'favoritesChanged'; favorites: FavoriteEntry[] }
@@ -145,9 +145,18 @@ export function useFolderViewer(rootElement: HTMLElement) {
 		if (hasClipboardEntry) vscode.postMessage({ type: 'paste', destinationUri });
 	}
 
+	function createDirectory(parentUri = currentUri) {
+		vscode.postMessage({ type: 'createDirectory', parentUri });
+	}
+
 	function openFolder(type: 'openInNewTab' | 'openInNewWindow' | 'openInTerminal') {
 		const entry = contextMenu?.entry;
 		vscode.postMessage({ type, uri: entry?.type === 'directory' ? entry.uri : currentUri });
+	}
+
+	function openSelectionInNewTab() {
+		const target = selectedEntries.length === 1 && selectedEntries[0].type === 'directory' ? selectedEntries[0].uri : currentUri;
+		vscode.postMessage({ type: 'openInNewTab', uri: target });
 	}
 
 	function startArchive(kind: 'compress' | 'extract', targets = selectedEntries) {
@@ -182,7 +191,7 @@ export function useFolderViewer(rootElement: HTMLElement) {
 				setArchiveOperation(current => current?.id === message.operationId && !current.cancelling
 					? { ...current, percent: Math.max(0, Math.min(100, message.percent)), detail: message.detail }
 					: current);
-			} else if (['deleted', 'pasted', 'renamed'].includes(message.type)) {
+			} else if (['createdDirectory', 'deleted', 'pasted', 'renamed'].includes(message.type)) {
 				requestDirectory(currentUri, false);
 			} else if (message.type === 'compressed' || message.type === 'extracted') {
 				setArchiveOperation(current => current?.id === message.operationId ? null : current);
@@ -228,6 +237,8 @@ export function useFolderViewer(rootElement: HTMLElement) {
 				if (key === 'a') { event.preventDefault(); setSelectedUris(new Set(entries.map(entry => entry.uri))); }
 				else if (key === 'x' && selectedEntries.length) { event.preventDefault(); postForSelection('setClipboard', 'cut'); }
 				else if (key === 'c' && selectedEntries.length) { event.preventDefault(); postForSelection('setClipboard', 'copy'); }
+				else if (key === 'r') { event.preventDefault(); requestDirectory(currentUri, false); }
+				else if (key === 't') { event.preventDefault(); openSelectionInNewTab(); }
 				else if (key === 'v' && hasClipboardEntry) { event.preventDefault(); paste(); }
 				else if (event.metaKey && event.key === 'Backspace' && selectedEntries.length) { event.preventDefault(); postForSelection('delete', event.shiftKey); }
 			} else if (event.altKey && event.key.toLowerCase() === 'c' && (event.metaKey || event.shiftKey) && selectedEntries.length) {
@@ -251,7 +262,7 @@ export function useFolderViewer(rootElement: HTMLElement) {
 			renameFavorite: (uri: string) => vscode.postMessage({ type: 'renameFavorite', uri }),
 			cut: () => postForSelection('setClipboard', 'cut'), copy: () => postForSelection('setClipboard', 'copy'),
 			copyPath: () => postForSelection('copyPath'), delete: (permanent: boolean) => postForSelection('delete', permanent),
-			paste, renameSelected, openFolder, startArchive, calculateSize,
+			paste, createDirectory, renameSelected, openFolder, startArchive, calculateSize,
 			cancelArchive: () => setArchiveOperation(current => {
 				if (!current || current.cancelling) return current;
 				vscode.postMessage({ type: 'cancelOperation', operationId: current.id });

@@ -20,6 +20,7 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 			<MenuItem icon="codicon-screen-cut" label="Cut" shortcut={shortcut('⌘X', 'Ctrl+X')} disabled={!hasSelection} onClick={closeAfter(actions.cut)} />
 			<MenuItem icon="codicon-copy" label="Copy" shortcut={shortcut('⌘C', 'Ctrl+C')} disabled={!hasSelection} onClick={closeAfter(actions.copy)} />
 			<MenuItem icon="codicon-clippy" label="Paste" shortcut={shortcut('⌘V', 'Ctrl+V')} disabled={!state.hasClipboardEntry} onClick={closeAfter(() => actions.paste(state.contextMenu?.entry?.type === 'directory' ? state.contextMenu.entry.uri : state.currentUri))} />
+			<MenuItem icon="codicon-new-folder" label="New Folder" disabled={!!state.contextMenu.entry && state.contextMenu.entry.type !== 'directory'} onClick={closeAfter(() => actions.createDirectory(state.contextMenu?.entry?.type === 'directory' ? state.contextMenu.entry.uri : state.currentUri))} />
 			<Separator />
 			<MenuItem icon="codicon-copy" label="Copy Path" shortcut={shortcut('⌥⌘C', 'Shift+Alt+C')} disabled={!hasSelection} onClick={closeAfter(actions.copyPath)} />
 			<MenuItem icon="codicon-rename" label="Rename" shortcut="F2" disabled={selection.length !== 1} onClick={closeAfter(actions.renameSelected)} />

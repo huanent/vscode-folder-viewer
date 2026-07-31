@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ArchiveOperation, compressEntries, extractArchive, OperationCancelledError } from '../archive';
 import { calculateDirectorySize, readDirectory } from '../filesystem/directoryService';
 import { getDisplayName } from '../filesystem/entry';
-import { deleteEntries, pasteEntries, renameEntry } from '../filesystem/operations';
+import { createDirectory, deleteEntries, pasteEntries, renameEntry } from '../filesystem/operations';
 import { getWebviewHtml } from '../webview';
 import { ViewerDocument } from './document';
 import type { ViewerManager } from './manager';
@@ -90,6 +90,9 @@ export class ViewerPanelController implements vscode.Disposable {
 			case 'paste':
 				await this.paste(message.destinationUri);
 				return;
+			case 'createDirectory':
+				await this.createDirectory(message.parentUri);
+				return;
 			case 'rename':
 				if (await renameEntry(getSafeUri(rootUri, message.uri))) {
 					await this.panel.webview.postMessage({ type: 'renamed' });
@@ -137,6 +140,14 @@ export class ViewerPanelController implements vscode.Disposable {
 				}
 				return;
 			}
+		}
+	}
+
+	private async createDirectory(parentValue: string): Promise<void> {
+		const parentUri = getSafeUri(this.document.rootUri, parentValue);
+		await assertDirectory(parentUri, 'Subfolders can only be created inside a folder.');
+		if (await createDirectory(parentUri)) {
+			await this.panel.webview.postMessage({ type: 'createdDirectory' });
 		}
 	}
 

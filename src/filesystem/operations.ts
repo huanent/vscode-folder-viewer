@@ -29,6 +29,22 @@ export async function renameEntry(targetUri: vscode.Uri): Promise<boolean> {
 	return true;
 }
 
+export async function createDirectory(parentUri: vscode.Uri): Promise<boolean> {
+	const name = await vscode.window.showInputBox({
+		title: 'New Folder',
+		prompt: 'Enter a folder name',
+		value: 'New Folder',
+		valueSelection: [0, 'New Folder'.length],
+		validateInput: value => validateEntryName(value)
+	});
+	if (name === undefined) {
+		return false;
+	}
+
+	await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(parentUri, name));
+	return true;
+}
+
 export async function deleteEntries(targetUris: vscode.Uri[], permanent: boolean): Promise<boolean> {
 	if (targetUris.length === 0) {
 		return false;

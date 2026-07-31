@@ -8,6 +8,7 @@ export type OutboundMessage =
 	| { type: 'calculateDirectorySize'; uri: string }
 	| { type: 'setClipboard'; uris: string[]; operation: 'cut' | 'copy' }
 	| { type: 'paste'; destinationUri: string }
+	| { type: 'createDirectory'; parentUri: string }
 	| { type: 'rename'; uri: string }
 	| { type: 'copyPath'; uris: string[] }
 	| { type: 'setFavorite'; uri: string; favorite: boolean }
