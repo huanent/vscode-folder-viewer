@@ -119,11 +119,7 @@ export class ViewerPanelController implements vscode.Disposable {
 				);
 				return;
 			case 'openInTerminal':
-				await this.openDirectory(
-					message.uri,
-					'Only folders can be opened in a terminal.',
-					uri => vscode.window.createTerminal({ cwd: uri, name: getDisplayName(uri) }).show()
-				);
+				await this.openInTerminal(message.uri);
 				return;
 			case 'compress':
 				await this.compress(message.operationId, message.uris, message.destinationUri);
@@ -218,6 +214,13 @@ export class ViewerPanelController implements vscode.Disposable {
 		const directoryUri = getSafeUri(this.document.rootUri, uriValue);
 		await assertDirectory(directoryUri, errorMessage);
 		await open(directoryUri);
+	}
+
+	private async openInTerminal(uriValue: string): Promise<void> {
+		const targetUri = getSafeUri(this.document.rootUri, uriValue);
+		const stat = await vscode.workspace.fs.stat(targetUri);
+		const directoryUri = stat.type & vscode.FileType.Directory ? targetUri : vscode.Uri.joinPath(targetUri, '..');
+		vscode.window.createTerminal({ cwd: directoryUri, name: getDisplayName(directoryUri) }).show();
 	}
 
 	private async compress(operationId: string, uriValues: string[], destinationValue: string): Promise<void> {

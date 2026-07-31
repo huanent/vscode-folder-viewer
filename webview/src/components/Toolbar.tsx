@@ -34,7 +34,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 								className="flex max-w-55 shrink-0 cursor-pointer items-center overflow-hidden rounded-sm border-0 bg-transparent px-1.25 py-0.5 text-breadcrumb text-ellipsis whitespace-nowrap hover:bg-breadcrumb-hover hover:text-breadcrumb-focus focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-focus disabled:cursor-default disabled:font-semibold disabled:text-breadcrumb-active"
 								onClick={() => actions.requestDirectory(crumb.uri, true)}
 							>
-								{index === 0 ? '/' : crumb.label}
+								{index === 0 ? <i className={`codicon codicon-home ${index === crumbs.length - 1 ? 'breadcrumb-active-icon' : ''}`} aria-hidden="true" /> : crumb.label}
 							</button>
 						</span>
 					))}

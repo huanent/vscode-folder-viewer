@@ -24,16 +24,16 @@ export function FavoritesPanel({ state, actions }: FavoritesPanelProps) {
 				<div className="px-2 py-4.5 text-center text-muted">No favorite folders.</div>
 			) : state.favoriteUris.map(uri => {
 				const relativePath = getRelativePath(state.rootUri, uri);
-				const parts = relativePath.split('/');
 				const customName = state.favoriteNames[uri];
-				const name = customName ?? parts.pop();
-				const parent = parts.join('/');
+				const pathParts = relativePath.split('/');
+				const folderName = pathParts.pop() ?? relativePath;
+				const parentPath = pathParts.length ? `${pathParts.join('/')}/` : '';
 				return (
 					<button
 						key={uri}
 						type="button"
 						title={relativePath}
-						className="my-px flex h-11.5 w-full min-w-0 cursor-pointer items-center gap-2 overflow-hidden rounded-sm border-0 bg-transparent px-2 text-left text-menu-foreground hover:bg-menu-selection hover:text-menu-selection-foreground focus:bg-menu-selection focus:text-menu-selection-foreground focus:outline-none"
+						className="my-px flex h-8 w-full min-w-0 cursor-pointer items-center gap-2 overflow-hidden rounded-sm border-0 bg-transparent px-2 text-left text-menu-foreground hover:bg-menu-selection hover:text-menu-selection-foreground focus:bg-menu-selection focus:text-menu-selection-foreground focus:outline-none"
 						onClick={() => {
 							actions.setFavoritesOpen(false);
 							actions.requestDirectory(uri, true);
@@ -45,10 +45,14 @@ export function FavoritesPanel({ state, actions }: FavoritesPanelProps) {
 						}}
 					>
 						<i className="codicon codicon-folder shrink-0 text-base text-folder" />
-						<span className="grid min-w-0 gap-0.5">
-							<span className="overflow-hidden font-semibold text-ellipsis whitespace-nowrap">{name}</span>
-							{!customName && parent && <span className="overflow-hidden text-[11px] text-muted text-ellipsis whitespace-nowrap">{parent}</span>}
-						</span>
+						{customName ? (
+							<span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{customName}</span>
+						) : (
+							<span className="flex min-w-0 overflow-hidden whitespace-nowrap">
+								<span className="min-w-0 overflow-hidden text-ellipsis">{parentPath}</span>
+								<span className="shrink-0">{folderName}</span>
+							</span>
+						)}
 					</button>
 				);
 			})}

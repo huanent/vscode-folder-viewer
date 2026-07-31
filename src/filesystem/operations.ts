@@ -34,21 +34,43 @@ export async function deleteEntries(targetUris: vscode.Uri[], permanent: boolean
 		return false;
 	}
 	if (permanent) {
-		const label = targetUris.length === 1 ? `"${getDisplayName(targetUris[0])}"` : `${targetUris.length} items`;
-		const choice = await vscode.window.showWarningMessage(
-			`Permanently delete ${label}?`,
-			{ modal: true, detail: 'This action cannot be undone.' },
-			'Delete Permanently'
-		);
-		if (choice !== 'Delete Permanently') {
+		if (!await confirmPermanentDelete(targetUris)) {
 			return false;
 		}
 	}
 
-	for (const targetUri of targetUris) {
-		await vscode.workspace.fs.delete(targetUri, { recursive: true, useTrash: !permanent });
+	try {
+		await deleteTargetUris(targetUris, !permanent);
+	} catch (error) {
+		if (permanent || !isTrashUnsupportedError(error)) {
+			throw error;
+		}
+		if (!await confirmPermanentDelete(targetUris, 'Trash is not supported for this location.')) {
+			return false;
+		}
+		await deleteTargetUris(targetUris, false);
 	}
 	return true;
+}
+
+async function confirmPermanentDelete(targetUris: vscode.Uri[], detail = 'This action cannot be undone.'): Promise<boolean> {
+	const label = targetUris.length === 1 ? `"${getDisplayName(targetUris[0])}"` : `${targetUris.length} items`;
+	const choice = await vscode.window.showWarningMessage(
+		`Permanently delete ${label}?`,
+		{ modal: true, detail },
+		'Delete Permanently'
+	);
+	return choice === 'Delete Permanently';
+}
+
+async function deleteTargetUris(targetUris: vscode.Uri[], useTrash: boolean): Promise<void> {
+	for (const targetUri of targetUris) {
+		await vscode.workspace.fs.delete(targetUri, { recursive: true, useTrash });
+	}
+}
+
+function isTrashUnsupportedError(error: unknown): boolean {
+	return error instanceof Error && /trash.*provider does not support|provider does not support.*trash/i.test(error.message);
 }
 
 export async function pasteEntries(clipboardState: ClipboardState, destinationDirectoryUri: vscode.Uri): Promise<PasteResult> {

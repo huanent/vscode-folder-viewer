@@ -9,6 +9,7 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 	const selection = state.selectedEntries;
 	const hasSelection = selection.length > 0;
 	const canOpenFolder = !hasSelection || (selection.length === 1 && selection[0].type === 'directory' && selection[0].uri === state.contextMenu.entry?.uri);
+	const canOpenTerminal = !hasSelection || (selection.length === 1 && selection[0].uri === state.contextMenu.entry?.uri);
 	const canExtract = selection.length === 1 && selection[0].type === 'file' && selection[0].name.toLowerCase().endsWith('.zip');
 	const closeAfter = (action: () => void) => () => { action(); actions.closeContextMenu(); };
 	const left = Math.max(8, Math.min(state.contextMenu.x, window.innerWidth - 210));
@@ -25,8 +26,8 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 			{canOpenFolder && <>
 				<MenuItem icon="codicon-file-symlink-directory" label="Open in New Tab" onClick={closeAfter(() => actions.openFolder('openInNewTab'))} />
 				<MenuItem icon="codicon-open-in-window" label="Open in New Window" onClick={closeAfter(() => actions.openFolder('openInNewWindow'))} />
-				<MenuItem icon="codicon-terminal" label="Open in Terminal" onClick={closeAfter(() => actions.openFolder('openInTerminal'))} />
 			</>}
+			{canOpenTerminal && <MenuItem icon="codicon-terminal" label="Open in Terminal" onClick={closeAfter(() => actions.openFolder('openInTerminal'))} />}
 			{hasSelection && <Separator />}
 			{hasSelection && !canExtract && <MenuItem icon="codicon-file-zip" label="Compress to ZIP" onClick={closeAfter(() => actions.startArchive('compress'))} />}
 			{canExtract && <MenuItem icon="codicon-file-zip" label="Extract ZIP" onClick={closeAfter(() => actions.startArchive('extract'))} />}
