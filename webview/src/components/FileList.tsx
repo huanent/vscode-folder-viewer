@@ -34,7 +34,7 @@ function FileRow({ entry, state, actions }: { entry: FileEntry } & FileListProps
 	const selected = state.selectedUris.has(entry.uri);
 	const cut = state.cutUris.has(entry.uri);
 	const classes = selected
-		? 'bg-inactive-selection text-inactive-selection-foreground focus-within:bg-selection focus-within:text-selection-foreground'
+		? 'bg-selection text-selection-foreground'
 		: 'hover:bg-hover hover:text-hover-foreground';
 
 	return (
@@ -42,6 +42,7 @@ function FileRow({ entry, state, actions }: { entry: FileEntry } & FileListProps
 			className={`${fileGridClasses} h-8 cursor-default rounded-sm ${classes} ${cut ? 'opacity-50' : ''}`}
 			role="option"
 			aria-selected={selected}
+			data-uri={entry.uri}
 			tabIndex={0}
 			title={entry.name}
 			onClick={event => actions.selectEntry(entry, event)}

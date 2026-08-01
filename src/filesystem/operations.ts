@@ -13,6 +13,7 @@ export interface ClipboardState {
 
 export interface PasteResult {
 	completedUris: vscode.Uri[];
+	pastedUris: vscode.Uri[];
 	changed: boolean;
 }
 
@@ -130,6 +131,7 @@ export async function pasteEntries(clipboardState: ClipboardState, destinationDi
 		});
 	} : undefined;
 	const completedUris: vscode.Uri[] = [];
+	const pastedUris: vscode.Uri[] = [];
 	let changed = false;
 	for (const sourceUri of clipboardState.uris) {
 		const result = await pasteEntry(sourceUri, clipboardState.operation, destinationDirectoryUri, operation?.token, reportProgress);
@@ -137,12 +139,16 @@ export async function pasteEntries(clipboardState: ClipboardState, destinationDi
 		if (result.completed) {
 			completedUris.push(sourceUri);
 		}
+		if (result.pastedUri) {
+			pastedUris.push(result.pastedUri);
+		}
 	}
-	return { completedUris, changed };
+	return { completedUris, pastedUris, changed };
 }
 
 interface PasteEntryResult {
 	completed: boolean;
+	pastedUri?: vscode.Uri;
 	changed: boolean;
 }
 
@@ -154,15 +160,16 @@ async function pasteEntry(
 	onProgress?: (uri: vscode.Uri, copiedBytes?: number, force?: boolean) => void
 ): Promise<PasteEntryResult> {
 	throwIfPasteCancelled(token);
-	const targetUri = vscode.Uri.joinPath(destinationDirectoryUri, getDisplayName(sourceUri));
+	let targetUri = vscode.Uri.joinPath(destinationDirectoryUri, getDisplayName(sourceUri));
 	const sourceStat = await vscode.workspace.fs.stat(sourceUri);
 	if (targetUri.toString() === sourceUri.toString()) {
-		if (sourceStat.type & vscode.FileType.Directory) {
-			await confirmDirectoryConflict(targetUri);
-		} else {
-			await confirmOverwrite(targetUri);
+		if (operation === 'cut') {
+			return { completed: false, changed: false };
 		}
-		return { completed: false, changed: false };
+		if (!(await confirmCopyInSameDirectory(sourceUri))) {
+			return { completed: false, changed: false };
+		}
+		targetUri = await getAvailableCopyUri(destinationDirectoryUri, getDisplayName(sourceUri), Boolean(sourceStat.type & vscode.FileType.Directory));
 	}
 
 	const sourcePath = sourceUri.path.endsWith('/') ? sourceUri.path : `${sourceUri.path}/`;
@@ -176,7 +183,8 @@ async function pasteEntry(
 		if ((sourceStat.type & vscode.FileType.Directory) && (targetStat.type & vscode.FileType.Directory)) {
 			const choice = await confirmDirectoryConflict(targetUri);
 			if (choice === 'merge') {
-				return mergeDirectory(sourceUri, targetUri, operation, token, onProgress);
+				const result = await mergeDirectory(sourceUri, targetUri, operation, token, onProgress);
+				return { ...result, pastedUri: result.changed ? targetUri : undefined };
 			}
 			if (choice !== 'replace') {
 				return { completed: false, changed: false };
@@ -202,7 +210,7 @@ async function pasteEntry(
 	} else {
 		await copyEntry(sourceUri, targetUri, sourceStat, overwrite, token, onProgress);
 	}
-	return { completed: true, changed: true };
+	return { completed: true, pastedUri: targetUri, changed: true };
 }
 
 async function mergeDirectory(
@@ -344,4 +352,43 @@ async function confirmDirectoryConflict(targetUri: vscode.Uri): Promise<'merge' 
 		return 'replace';
 	}
 	return undefined;
+}
+
+async function confirmCopyInSameDirectory(sourceUri: vscode.Uri): Promise<boolean> {
+	const choice = await vscode.window.showWarningMessage(
+		`Copy "${getDisplayName(sourceUri)}" in this folder?`,
+		{ modal: true, detail: 'A new copy will be created with the next available name.' },
+		'Copy'
+	);
+	return choice === 'Copy';
+}
+
+async function getAvailableCopyUri(parentUri: vscode.Uri, requestedName: string, isDirectory: boolean): Promise<vscode.Uri> {
+	const extensionIndex = isDirectory ? requestedName.length : getExtensionIndex(requestedName);
+	const baseName = requestedName.slice(0, extensionIndex);
+	const extension = requestedName.slice(extensionIndex);
+	let index = 2;
+	let candidate = vscode.Uri.joinPath(parentUri, `${baseName} ${index}${extension}`);
+	while (await uriExists(candidate)) {
+		index += 1;
+		candidate = vscode.Uri.joinPath(parentUri, `${baseName} ${index}${extension}`);
+	}
+	return candidate;
+}
+
+function getExtensionIndex(name: string): number {
+	const extensionIndex = name.lastIndexOf('.');
+	return extensionIndex > 0 ? extensionIndex : name.length;
+}
+
+async function uriExists(uri: vscode.Uri): Promise<boolean> {
+	try {
+		await vscode.workspace.fs.stat(uri);
+		return true;
+	} catch (error) {
+		if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') {
+			return false;
+		}
+		throw error;
+	}
 }

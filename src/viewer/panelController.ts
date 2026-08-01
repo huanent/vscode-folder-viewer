@@ -251,7 +251,7 @@ export class ViewerPanelController implements vscode.Disposable {
 				onProgress: progress => void this.panel.webview.postMessage({ type: 'pasteProgress', operationId, operation: clipboardState.operation, ...progress })
 			});
 			await this.manager.removeCompletedCutEntries(result.completedUris);
-			await this.panel.webview.postMessage({ type: 'pasted', operationId });
+			await this.panel.webview.postMessage({ type: 'pasted', operationId, uris: result.pastedUris.map(uri => uri.toString()) });
 		} finally {
 			this.pasteOperations.delete(operationId);
 			operation.dispose();

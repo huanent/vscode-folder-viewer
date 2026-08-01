@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { ArchiveOperation, ContextMenuState, FavoriteEntry, FileEntry, PersistedState } from '../types';
 import { vscode } from '../services/vscode';
 
@@ -14,7 +14,7 @@ type InboundMessage =
 	| { type: 'archiveProgress'; operationId: string; percent: number; detail: string }
 	| { type: 'pasteProgress'; operationId: string; operation: 'cut' | 'copy'; percent: number; detail: string }
 	| { type: 'createdDirectory' | 'deleted' | 'renamed' }
-	| { type: 'pasted'; operationId: string }
+	| { type: 'pasted'; operationId: string; uris: string[] }
 	| { type: 'compressed' | 'extracted' | 'archiveCancelled' | 'archiveDismissed' | 'pasteCancelled'; operationId: string }
 	| { type: 'clipboardChanged'; hasEntry: boolean; operation: 'cut' | 'copy'; uris: string[] }
 	| { type: 'favoritesChanged'; favorites: FavoriteEntry[] }
@@ -54,6 +54,8 @@ export function useFolderViewer(rootElement: HTMLElement) {
 	const [cutUris, setCutUris] = useState<Set<string>>(new Set());
 	const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 	const [archiveOperation, setArchiveOperation] = useState<ArchiveOperation | null>(null);
+	const pendingSelectionUrisRef = useRef<string[] | null>(null);
+	const pendingScrollUriRef = useRef<string | null>(null);
 	const [status, setStatus] = useState('Loading...');
 
 	const selectedEntries = entries.filter(entry => selectedUris.has(entry.uri));
@@ -195,10 +197,18 @@ export function useFolderViewer(rootElement: HTMLElement) {
 
 	const onMessage = useEffectEvent(({ data: message }: MessageEvent<InboundMessage>) => {
 			if (message.type === 'directory') {
+				const pendingSelectionUris = pendingSelectionUrisRef.current;
+				const nextSelectedUris = pendingSelectionUris
+					? new Set(message.entries.filter(entry => pendingSelectionUris.includes(entry.uri)).map(entry => entry.uri))
+					: new Set<string>();
+				const scrollUri = message.entries.find(entry => pendingSelectionUris?.includes(entry.uri))?.uri;
 				setRootUri(message.rootUri);
 				setCurrentUri(message.currentUri);
 				setEntries(message.entries);
-				clearSelection();
+				setSelectedUris(nextSelectedUris);
+				setSelectionAnchorUri(nextSelectedUris.values().next().value ?? null);
+				pendingScrollUriRef.current = scrollUri ?? null;
+				pendingSelectionUrisRef.current = null;
 				setStatus('');
 				persist(message.currentUri, history);
 			} else if (message.type === 'archiveProgress') {
@@ -210,7 +220,10 @@ export function useFolderViewer(rootElement: HTMLElement) {
 					? { ...current, kind: message.operation, percent: Math.max(0, Math.min(100, message.percent)), detail: message.detail }
 					: current);
 			} else if (['createdDirectory', 'deleted', 'pasted', 'renamed'].includes(message.type)) {
-				if (message.type === 'pasted') setArchiveOperation(current => current?.id === message.operationId ? null : current);
+				if (message.type === 'pasted') {
+					setArchiveOperation(current => current?.id === message.operationId ? null : current);
+					pendingSelectionUrisRef.current = message.uris;
+				}
 				requestDirectory(currentUri, false);
 			} else if (message.type === 'compressed' || message.type === 'extracted') {
 				setArchiveOperation(current => current?.id === message.operationId ? null : current);
@@ -250,6 +263,16 @@ export function useFolderViewer(rootElement: HTMLElement) {
 			window.removeEventListener('blur', onBlur);
 		};
 	}, []);
+
+	useEffect(() => {
+		if (!pendingScrollUriRef.current) return;
+		const uri = pendingScrollUriRef.current;
+		pendingScrollUriRef.current = null;
+		const frame = requestAnimationFrame(() => {
+			document.querySelector(`[data-uri="${CSS.escape(uri)}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+		});
+		return () => cancelAnimationFrame(frame);
+	}, [entries]);
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
