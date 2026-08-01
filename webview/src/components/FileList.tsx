@@ -1,4 +1,5 @@
 import type { MouseEvent } from 'react';
+import { useState } from 'react';
 import type { FolderViewerModel } from '../hooks/useFolderViewer';
 import { formatDate, formatSize, getFileIcon } from '../lib/formatters';
 import type { FileEntry } from '../types';
@@ -6,23 +7,40 @@ import type { FileEntry } from '../types';
 type FileListProps = Pick<FolderViewerModel, 'state' | 'actions'>;
 
 const fileGridClasses = 'grid grid-cols-[minmax(180px,1fr)_minmax(150px,210px)_minmax(150px,210px)_90px] items-center gap-x-4 px-2.5 max-[600px]:grid-cols-[minmax(140px,1fr)_72px]';
+const rowHeight = 32;
+const virtualizeThreshold = 500;
+const overscanRows = 8;
 
 export function FileList({ state, actions }: FileListProps) {
+	const [viewport, setViewport] = useState({ scrollTop: 0, height: 0 });
+	const virtual = state.entries.length > virtualizeThreshold;
+	const startIndex = virtual ? Math.max(0, Math.floor(viewport.scrollTop / rowHeight) - overscanRows) : 0;
+	const visibleRows = virtual ? Math.ceil(viewport.height / rowHeight) + overscanRows * 2 : state.entries.length;
+	const visibleEntries = virtual ? state.entries.slice(startIndex, startIndex + visibleRows) : state.entries;
+	const topSpacerHeight = virtual ? startIndex * rowHeight : 0;
+	const bottomSpacerHeight = virtual ? Math.max(0, (state.entries.length - startIndex - visibleEntries.length) * rowHeight) : 0;
+
 	return (
 		<main
 			className="h-[calc(100%-46px)] overflow-auto"
+			onScroll={event => {
+				const target = event.currentTarget;
+				setViewport({ scrollTop: target.scrollTop, height: target.clientHeight });
+			}}
 			onClick={event => {
 				if (!(event.target as HTMLElement).closest('[role="option"]')) actions.clearSelection();
 			}}
 			onContextMenu={event => actions.showContextMenu(event, null)}
 		>
 			<div className={`${fileGridClasses} sticky top-0 z-2 h-8 border-b border-border bg-app text-xs text-muted`}>
-				<span className="pl-6">Name</span><span className="max-[600px]:hidden">Created</span><span className="max-[600px]:hidden">Modified</span><span className="text-right">Size</span>
+				<span className="overflow-hidden text-ellipsis whitespace-nowrap pl-6">Name{state.entries.length ? ` (${state.entries.length})` : ''}</span><span className="max-[600px]:hidden">Created</span><span className="max-[600px]:hidden">Modified</span><span className="text-right">Size</span>
 			</div>
 			<div className="py-1 pb-3" role="listbox" aria-label="Folder contents" aria-multiselectable="true">
-				{state.entries.map(entry => (
+				{topSpacerHeight > 0 && <div style={{ height: topSpacerHeight }} />}
+				{visibleEntries.map(entry => (
 					<FileRow key={entry.uri} entry={entry} state={state} actions={actions} />
 				))}
+				{bottomSpacerHeight > 0 && <div style={{ height: bottomSpacerHeight }} />}
 			</div>
 			{state.entries.length === 0 && !state.status && <div className="py-11 text-center text-muted">This folder is empty.</div>}
 			{state.status && <div className="py-11 text-center text-muted" role="status" aria-live="polite">{state.status}</div>}

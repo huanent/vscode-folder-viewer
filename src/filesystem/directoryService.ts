@@ -10,12 +10,13 @@ export interface FileEntry {
 }
 
 export async function readDirectory(directoryUri: vscode.Uri): Promise<FileEntry[]> {
+	const limit = createConcurrencyLimit(64);
 	const directoryEntries = (await vscode.workspace.fs.readDirectory(directoryUri))
 		.filter(([name]) => name !== '.DS_Store');
 	const entries = await Promise.all(
 		directoryEntries.map(async ([name, fileType]): Promise<FileEntry> => {
 			const uri = vscode.Uri.joinPath(directoryUri, name);
-			const stat = await vscode.workspace.fs.stat(uri);
+			const stat = await limit(() => vscode.workspace.fs.stat(uri));
 			return {
 				name,
 				uri: uri.toString(),

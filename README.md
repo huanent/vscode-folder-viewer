@@ -51,6 +51,13 @@ Depending on the selection, the context menu provides:
 | Folder tools | Open in a new Folder Viewer tab, open in a new VS Code window, or open in the integrated terminal |
 | Archives | Compress the selection to a ZIP file or extract a selected ZIP file |
 
+## Behavior Notes
+
+- Each tab is scoped to the folder it was opened with. Navigation and file operations stay inside that root folder.
+- ZIP files open with extract behavior on double-click. Use the context menu to compress selected files or folders.
+- When moving items to trash is not supported by the current file system provider, Folder Viewer asks before falling back to permanent deletion.
+- Remote and virtual workspaces depend on the capabilities exposed by their VS Code file system provider, so some operations may be unavailable or slower than local folders.
+
 ## Keyboard Shortcuts
 
 | Action | macOS | Windows / Linux |

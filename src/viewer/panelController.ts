@@ -53,6 +53,7 @@ export class ViewerPanelController implements vscode.Disposable {
 		try {
 			await this.dispatchMessage(message);
 		} catch (error) {
+			const messageText = error instanceof Error ? error.message : String(error);
 			if (error instanceof OperationCancelledError && 'operationId' in message) {
 				await this.panel.webview.postMessage({ type: 'archiveCancelled', operationId: message.operationId });
 				return;
@@ -61,9 +62,10 @@ export class ViewerPanelController implements vscode.Disposable {
 				await this.panel.webview.postMessage({ type: 'pasteCancelled', operationId: message.operationId });
 				return;
 			}
+			void vscode.window.showErrorMessage(messageText);
 			await this.panel.webview.postMessage({
 				type: 'error',
-				message: error instanceof Error ? error.message : String(error),
+				message: messageText,
 				operationId: 'operationId' in message ? message.operationId : undefined
 			});
 		}
