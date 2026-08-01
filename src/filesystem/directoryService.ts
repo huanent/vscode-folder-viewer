@@ -37,31 +37,72 @@ export async function readDirectory(directoryUri: vscode.Uri): Promise<FileEntry
 }
 
 export async function calculateDirectorySize(directoryUri: vscode.Uri, token: vscode.CancellationToken): Promise<number> {
-	const limit = createConcurrencyLimit(16);
+	type PendingEntry = { uri: vscode.Uri; type: vscode.FileType };
 
-	async function visitDirectory(uri: vscode.Uri): Promise<number> {
-		throwIfCancelled(token);
-		const entries = await limit(() => vscode.workspace.fs.readDirectory(uri));
-		throwIfCancelled(token);
-		const sizes = await Promise.all(entries.map(async ([name, fileType]) => {
-			throwIfCancelled(token);
-			if (fileType & vscode.FileType.SymbolicLink) {
-				return 0;
+	const maxConcurrency = 16;
+	const pending: PendingEntry[] = [{ uri: directoryUri, type: vscode.FileType.Directory }];
+	let activeCount = 0;
+	let totalSize = 0;
+
+	return new Promise<number>((resolve, reject) => {
+		let settled = false;
+
+		const fail = (error: unknown) => {
+			if (!settled) {
+				settled = true;
+				reject(error);
+			}
+		};
+
+		const schedule = () => {
+			if (settled) return;
+			try {
+				throwIfCancelled(token);
+			} catch (error) {
+				fail(error);
+				return;
 			}
 
-			const entryUri = vscode.Uri.joinPath(uri, name);
-			if (fileType & vscode.FileType.Directory) {
-				return visitDirectory(entryUri);
+			while (activeCount < maxConcurrency && pending.length) {
+				const entry = pending.pop();
+				if (!entry) break;
+				activeCount++;
+				void processEntry(entry).then(() => {
+					activeCount--;
+					if (!pending.length && activeCount === 0) {
+						settled = true;
+						resolve(totalSize);
+						return;
+					}
+					schedule();
+				}, error => {
+					activeCount--;
+					fail(error);
+				});
 			}
-			const stat = await limit(() => vscode.workspace.fs.stat(entryUri));
+		};
+
+		const processEntry = async (entry: PendingEntry): Promise<void> => {
 			throwIfCancelled(token);
-			return stat.size;
-		}));
+			if (entry.type & vscode.FileType.SymbolicLink) return;
+			if (entry.type & vscode.FileType.Directory) {
+				const children = await vscode.workspace.fs.readDirectory(entry.uri);
+				throwIfCancelled(token);
+				for (const [name, fileType] of children) {
+					if (!(fileType & vscode.FileType.SymbolicLink)) {
+						pending.push({ uri: vscode.Uri.joinPath(entry.uri, name), type: fileType });
+					}
+				}
+				return;
+			}
 
-		return sizes.reduce((total, entrySize) => total + entrySize, 0);
-	}
+			const stat = await vscode.workspace.fs.stat(entry.uri);
+			throwIfCancelled(token);
+			totalSize += stat.size;
+		};
 
-	return visitDirectory(directoryUri);
+		schedule();
+	});
 }
 
 function throwIfCancelled(token: vscode.CancellationToken): void {
