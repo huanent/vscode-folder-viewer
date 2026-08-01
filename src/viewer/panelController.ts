@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ArchiveOperation, compressEntries, extractArchive, OperationCancelledError } from '../archive';
 import { calculateDirectorySize, readDirectory } from '../filesystem/directoryService';
 import { getDisplayName } from '../filesystem/entry';
-import { createDirectory, deleteEntries, pasteEntries, renameEntry } from '../filesystem/operations';
+import { createDirectory, deleteEntries, pasteEntries, PasteCancelledError, renameEntry } from '../filesystem/operations';
 import { getWebviewHtml } from '../webview';
 import { ViewerDocument } from './document';
 import { webviewFocusContextKey, type ViewerManager } from './manager';
@@ -11,6 +11,7 @@ import { getSafeUri } from './uri';
 
 export class ViewerPanelController implements vscode.Disposable {
 	private readonly archiveOperations = new Map<string, ArchiveOperation>();
+	private readonly pasteOperations = new Map<string, vscode.CancellationTokenSource>();
 	private readonly directorySizeOperations = new Set<vscode.CancellationTokenSource>();
 	private readonly disposables: vscode.Disposable[] = [];
 
@@ -43,6 +44,7 @@ export class ViewerPanelController implements vscode.Disposable {
 	dispose(): void {
 		void this.setWebviewFocus(false);
 		this.archiveOperations.forEach(operation => operation.cancelled = true);
+		this.pasteOperations.forEach(operation => operation.cancel());
 		this.cancelDirectorySizeOperations();
 		this.disposables.forEach(disposable => disposable.dispose());
 	}
@@ -53,6 +55,10 @@ export class ViewerPanelController implements vscode.Disposable {
 		} catch (error) {
 			if (error instanceof OperationCancelledError && 'operationId' in message) {
 				await this.panel.webview.postMessage({ type: 'archiveCancelled', operationId: message.operationId });
+				return;
+			}
+			if (error instanceof PasteCancelledError && 'operationId' in message) {
+				await this.panel.webview.postMessage({ type: 'pasteCancelled', operationId: message.operationId });
 				return;
 			}
 			await this.panel.webview.postMessage({
@@ -91,6 +97,7 @@ export class ViewerPanelController implements vscode.Disposable {
 				return;
 			case 'cancelOperation':
 				this.cancelArchiveOperation(message.operationId);
+				this.cancelPasteOperation(message.operationId);
 				return;
 			case 'stateChanged':
 				this.document.latestViewState = {
@@ -118,7 +125,7 @@ export class ViewerPanelController implements vscode.Disposable {
 				});
 				return;
 			case 'paste':
-				await this.paste(message.destinationUri);
+				await this.paste(message.operationId, message.destinationUri);
 				return;
 			case 'createDirectory':
 				await this.createDirectory(message.parentUri);
@@ -231,15 +238,23 @@ export class ViewerPanelController implements vscode.Disposable {
 		}
 	}
 
-	private async paste(destinationValue: string): Promise<void> {
+	private async paste(operationId: string, destinationValue: string): Promise<void> {
 		const clipboardState = this.manager.getClipboardState();
 		if (!clipboardState?.uris.length) {
 			throw new Error('There is no item to paste.');
 		}
-		const result = await pasteEntries(clipboardState, getSafeUri(this.document.rootUri, destinationValue));
-		await this.manager.removeCompletedCutEntries(result.completedUris);
-		if (result.changed) {
-			await this.panel.webview.postMessage({ type: 'pasted' });
+		const operation = new vscode.CancellationTokenSource();
+		this.pasteOperations.set(operationId, operation);
+		try {
+			const result = await pasteEntries(clipboardState, getSafeUri(this.document.rootUri, destinationValue), {
+				token: operation.token,
+				onProgress: progress => void this.panel.webview.postMessage({ type: 'pasteProgress', operationId, operation: clipboardState.operation, ...progress })
+			});
+			await this.manager.removeCompletedCutEntries(result.completedUris);
+			await this.panel.webview.postMessage({ type: 'pasted', operationId });
+		} finally {
+			this.pasteOperations.delete(operationId);
+			operation.dispose();
 		}
 	}
 
@@ -304,6 +319,10 @@ export class ViewerPanelController implements vscode.Disposable {
 		if (operation) {
 			operation.cancelled = true;
 		}
+	}
+
+	private cancelPasteOperation(operationId: string): void {
+		this.pasteOperations.get(operationId)?.cancel();
 	}
 
 	private cancelDirectorySizeOperations(): void {

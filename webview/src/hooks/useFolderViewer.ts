@@ -12,8 +12,10 @@ interface DirectoryMessage {
 type InboundMessage =
 	| DirectoryMessage
 	| { type: 'archiveProgress'; operationId: string; percent: number; detail: string }
-	| { type: 'createdDirectory' | 'deleted' | 'pasted' | 'renamed' }
-	| { type: 'compressed' | 'extracted' | 'archiveCancelled' | 'archiveDismissed'; operationId: string }
+	| { type: 'pasteProgress'; operationId: string; operation: 'cut' | 'copy'; percent: number; detail: string }
+	| { type: 'createdDirectory' | 'deleted' | 'renamed' }
+	| { type: 'pasted'; operationId: string }
+	| { type: 'compressed' | 'extracted' | 'archiveCancelled' | 'archiveDismissed' | 'pasteCancelled'; operationId: string }
 	| { type: 'clipboardChanged'; hasEntry: boolean; operation: 'cut' | 'copy'; uris: string[] }
 	| { type: 'favoritesChanged'; favorites: FavoriteEntry[] }
 	| { type: 'directorySize'; uri: string; size: number }
@@ -156,7 +158,10 @@ export function useFolderViewer(rootElement: HTMLElement) {
 	}
 
 	function paste(destinationUri = currentUri) {
-		if (hasClipboardEntry) vscode.postMessage({ type: 'paste', destinationUri });
+		if (!hasClipboardEntry || archiveOperation) return;
+		const operationId = crypto.randomUUID();
+		setArchiveOperation({ id: operationId, kind: cutUris.size ? 'cut' : 'copy', cancelling: false, percent: 0, detail: 'Starting...' });
+		vscode.postMessage({ type: 'paste', operationId, destinationUri });
 	}
 
 	function createDirectory(parentUri = currentUri) {
@@ -200,12 +205,17 @@ export function useFolderViewer(rootElement: HTMLElement) {
 				setArchiveOperation(current => current?.id === message.operationId && !current.cancelling
 					? { ...current, percent: Math.max(0, Math.min(100, message.percent)), detail: message.detail }
 					: current);
+			} else if (message.type === 'pasteProgress') {
+				setArchiveOperation(current => current?.id === message.operationId && !current.cancelling
+					? { ...current, kind: message.operation, percent: Math.max(0, Math.min(100, message.percent)), detail: message.detail }
+					: current);
 			} else if (['createdDirectory', 'deleted', 'pasted', 'renamed'].includes(message.type)) {
+				if (message.type === 'pasted') setArchiveOperation(current => current?.id === message.operationId ? null : current);
 				requestDirectory(currentUri, false);
 			} else if (message.type === 'compressed' || message.type === 'extracted') {
 				setArchiveOperation(current => current?.id === message.operationId ? null : current);
 				requestDirectory(currentUri, false);
-			} else if (message.type === 'archiveCancelled' || message.type === 'archiveDismissed') {
+			} else if (message.type === 'archiveCancelled' || message.type === 'archiveDismissed' || message.type === 'pasteCancelled') {
 				setArchiveOperation(current => current?.id === message.operationId ? null : current);
 			} else if (message.type === 'clipboardChanged') {
 				setHasClipboardEntry(message.hasEntry);

@@ -6,7 +6,7 @@ export type WebviewMessage =
 	| { type: 'openFile'; uri: string }
 	| { type: 'calculateDirectorySize'; uri: string }
 	| { type: 'setClipboard'; uris: string[]; operation: 'cut' | 'copy' }
-	| { type: 'paste'; destinationUri: string }
+	| { type: 'paste'; operationId: string; destinationUri: string }
 	| { type: 'createDirectory'; parentUri: string }
 	| { type: 'rename'; uri: string }
 	| { type: 'copyPath'; uris: string[] }

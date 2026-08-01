@@ -22,7 +22,7 @@ export interface PersistedState {
 
 export interface ArchiveOperation {
 	id: string;
-	kind: 'compress' | 'extract';
+	kind: 'compress' | 'extract' | 'copy' | 'cut';
 	cancelling: boolean;
 	percent: number;
 	detail: string;
