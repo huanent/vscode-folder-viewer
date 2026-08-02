@@ -10,6 +10,7 @@ export type WebviewMessage =
 	| { type: 'setClipboard'; uris: string[]; operation: 'cut' | 'copy' }
 	| { type: 'paste'; operationId: string; destinationUri: string }
 	| { type: 'createDirectory'; parentUri: string }
+	| { type: 'createFile'; parentUri: string }
 	| { type: 'rename'; uri: string }
 	| { type: 'copyPath'; uris: string[] }
 	| { type: 'setFavorite'; uri: string; favorite: boolean }
@@ -33,6 +34,7 @@ export type ExtensionMessage =
 	| { type: 'archiveProgress'; operationId: string; percent: number; detail: string }
 	| { type: 'pasteProgress'; operationId: string; operation: 'cut' | 'copy'; percent: number; detail: string }
 	| { type: 'createdDirectory' | 'deleted' | 'renamed' }
+	| { type: 'createdFile'; uri: string }
 	| { type: 'pasted'; operationId: string; uris: string[] }
 	| { type: 'compressed' | 'extracted' | 'archiveCancelled' | 'archiveDismissed' | 'pasteCancelled'; operationId: string }
 	| { type: 'clipboardChanged'; hasEntry: boolean; operation: 'cut' | 'copy'; uris: string[] }

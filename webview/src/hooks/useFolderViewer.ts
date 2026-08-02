@@ -124,6 +124,10 @@ export function useFolderViewer(rootElement: HTMLElement) {
 		vscode.postMessage({ type: 'createDirectory', parentUri });
 	}
 
+	function createFile(parentUri = currentUri) {
+		vscode.postMessage({ type: 'createFile', parentUri });
+	}
+
 	function openFolder(type: 'openInCurrentWindow' | 'openInNewTab' | 'openInNewWindow' | 'openInTerminal') {
 		const entry = contextMenu?.entry;
 		vscode.postMessage({ type, uri: contextMenu?.directoryUri ?? (entry?.type === 'directory' ? entry.uri : currentUri) });
@@ -172,10 +176,12 @@ export function useFolderViewer(rootElement: HTMLElement) {
 				setArchiveOperation(current => current?.id === message.operationId && !current.cancelling
 					? { ...current, kind: message.operation, percent: Math.max(0, Math.min(100, message.percent)), detail: message.detail }
 					: current);
-			} else if (['createdDirectory', 'deleted', 'pasted', 'renamed'].includes(message.type)) {
+			} else if (['createdDirectory', 'createdFile', 'deleted', 'pasted', 'renamed'].includes(message.type)) {
 				if (message.type === 'pasted') {
 					setArchiveOperation(current => current?.id === message.operationId ? null : current);
 					pendingSelectionUrisRef.current = message.uris;
+				} else if (message.type === 'createdFile') {
+					pendingSelectionUrisRef.current = [message.uri];
 				}
 				requestDirectory(currentUri, false);
 			} else if (message.type === 'compressed' || message.type === 'extracted') {
@@ -265,7 +271,7 @@ export function useFolderViewer(rootElement: HTMLElement) {
 			renameFavorite: (uri: string) => vscode.postMessage({ type: 'renameFavorite', uri }),
 			cut: () => postForSelection('setClipboard', 'cut'), copy: () => postForSelection('setClipboard', 'copy'),
 			copyPath, delete: (permanent: boolean) => postForSelection('delete', permanent),
-			paste, createDirectory, renameSelected, openFolder, startArchive, calculateSize,
+			paste, createDirectory, createFile, renameSelected, openFolder, startArchive, calculateSize,
 			cancelArchive: () => setArchiveOperation(current => {
 				if (!current || current.cancelling) return current;
 				vscode.postMessage({ type: 'cancelOperation', operationId: current.id });

@@ -62,6 +62,23 @@ export async function createDirectory(parentUri: vscode.Uri): Promise<boolean> {
 	return true;
 }
 
+export async function createFile(parentUri: vscode.Uri): Promise<vscode.Uri | undefined> {
+	const name = await vscode.window.showInputBox({
+		title: 'New File',
+		prompt: 'Enter a file name',
+		value: 'New File',
+		valueSelection: [0, 'New File'.length],
+		validateInput: value => validateEntryName(value)
+	});
+	if (name === undefined) {
+		return undefined;
+	}
+
+	const fileUri = vscode.Uri.joinPath(parentUri, name);
+	await vscode.workspace.fs.writeFile(fileUri, new Uint8Array());
+	return fileUri;
+}
+
 export async function deleteEntries(targetUris: vscode.Uri[], permanent: boolean): Promise<boolean> {
 	if (targetUris.length === 0) {
 		return false;

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ArchiveOperation, compressEntries, extractArchive, OperationCancelledError } from '../archive';
 import { calculateDirectorySize, readDirectory } from '../filesystem/directoryService';
 import { getDisplayName } from '../filesystem/entry';
-import { createDirectory, deleteEntries, pasteEntries, PasteCancelledError, renameEntry } from '../filesystem/operations';
+import { createDirectory, createFile, deleteEntries, pasteEntries, PasteCancelledError, renameEntry } from '../filesystem/operations';
 import { getWebviewHtml } from '../webview';
 import { ViewerDocument } from './document';
 import { webviewFocusContextKey, type ViewerManager } from './manager';
@@ -132,6 +132,9 @@ export class ViewerPanelController implements vscode.Disposable {
 			case 'createDirectory':
 				await this.createDirectory(message.parentUri);
 				return;
+			case 'createFile':
+				await this.createFile(message.parentUri);
+				return;
 			case 'rename':
 				if (await renameEntry(getSafeUri(rootUri, message.uri))) {
 					await this.panel.webview.postMessage({ type: 'renamed' });
@@ -198,6 +201,15 @@ export class ViewerPanelController implements vscode.Disposable {
 		await assertDirectory(parentUri, 'Subfolders can only be created inside a folder.');
 		if (await createDirectory(parentUri)) {
 			await this.panel.webview.postMessage({ type: 'createdDirectory' });
+		}
+	}
+
+	private async createFile(parentValue: string): Promise<void> {
+		const parentUri = getSafeUri(this.document.rootUri, parentValue);
+		await assertDirectory(parentUri, 'Files can only be created inside a folder.');
+		const fileUri = await createFile(parentUri);
+		if (fileUri) {
+			await this.panel.webview.postMessage({ type: 'createdFile', uri: fileUri.toString() });
 		}
 	}
 

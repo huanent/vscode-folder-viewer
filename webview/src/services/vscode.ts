@@ -10,6 +10,7 @@ export type OutboundMessage =
 	| { type: 'setClipboard'; uris: string[]; operation: 'cut' | 'copy' }
 	| { type: 'paste'; operationId: string; destinationUri: string }
 	| { type: 'createDirectory'; parentUri: string }
+	| { type: 'createFile'; parentUri: string }
 	| { type: 'rename'; uri: string }
 	| { type: 'copyPath'; uris: string[] }
 	| { type: 'setFavorite'; uri: string; favorite: boolean }
