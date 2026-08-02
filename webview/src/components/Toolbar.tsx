@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FolderViewerModel } from '../hooks/useFolderViewer';
 import { IconButton } from './IconButton';
 
@@ -6,6 +6,8 @@ type ToolbarProps = Pick<FolderViewerModel, 'state' | 'actions'>;
 
 export function Toolbar({ state, actions }: ToolbarProps) {
 	const breadcrumbsRef = useRef<HTMLElement>(null);
+	const pathInputRef = useRef<HTMLInputElement>(null);
+	const [pathValue, setPathValue] = useState('');
 	const favorite = state.favoriteUris.includes(state.currentUri);
 	const favoriteLabel = favorite ? 'Remove current folder from favorites' : 'Add current folder to favorites';
 	const crumbs = getBreadcrumbs(state.rootUri, state.currentUri);
@@ -14,6 +16,12 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 		breadcrumbsRef.current?.scrollTo({ left: breadcrumbsRef.current.scrollWidth });
 	}, [state.currentUri]);
 
+	useEffect(() => {
+		if (!state.pathInputOpen) return;
+		setPathValue(getPathInputValue(state.currentUri));
+		requestAnimationFrame(() => pathInputRef.current?.select());
+	}, [state.pathInputOpen, state.currentUri]);
+
 	return (
 		<header className="grid h-11.5 grid-cols-[auto_minmax(0,1fr)_28px] items-center gap-1 border-b border-border bg-app max-[600px]:gap-1.5 max-[600px]:px-2">
 			<div className="flex items-center gap-0.5" role="toolbar" aria-label="Navigation">
@@ -21,7 +29,24 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 				<IconButton icon="codicon-refresh" title="Refresh" aria-label="Refresh" onClick={() => actions.requestDirectory(state.currentUri, false)} />
 			</div>
 			<div className="grid h-7.5 min-w-0 grid-cols-[minmax(0,1fr)_30px] items-center overflow-hidden rounded border border-input-border bg-input">
-				<nav ref={breadcrumbsRef} className="scrollbar-none flex h-full min-w-0 items-center overflow-x-auto pl-1 [&::-webkit-scrollbar]:hidden" aria-label="Folder path">
+				{state.pathInputOpen ? (
+					<form className="h-full min-w-0" onSubmit={event => { event.preventDefault(); actions.navigatePath(pathValue); }}>
+						<input
+							ref={pathInputRef}
+							value={pathValue}
+							onChange={event => setPathValue(event.target.value)}
+							onKeyDown={event => {
+								if (event.key === 'Escape') {
+									event.stopPropagation();
+									actions.setPathInputOpen(false);
+								}
+							}}
+							className="h-full w-full border-0 bg-transparent px-1.5 text-foreground outline-none"
+							aria-label="Go to path"
+							spellCheck={false}
+						/>
+					</form>
+				) : <nav ref={breadcrumbsRef} className="scrollbar-none flex h-full min-w-0 items-center overflow-x-auto pl-1 [&::-webkit-scrollbar]:hidden" aria-label="Folder path">
 					{crumbs.map((crumb, index) => (
 						<span className="flex shrink-0 items-center" key={crumb.uri}>
 							{index > 0 && <i className="codicon codicon-chevron-right shrink-0 text-breadcrumb" />}
@@ -39,7 +64,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 							</button>
 						</span>
 					))}
-				</nav>
+				</nav>}
 				<IconButton
 					icon={favorite ? 'codicon-star-full' : 'codicon-star-empty'}
 					active={favorite}
@@ -62,6 +87,14 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 			/>
 		</header>
 	);
+}
+
+function getPathInputValue(uriValue: string) {
+	const uri = new URL(uriValue);
+	const pathname = decodeURIComponent(uri.pathname);
+	if (uri.protocol !== 'file:') return pathname;
+	if (uri.host) return `//${uri.host}${pathname}`;
+	return /^\/[a-z]:\//i.test(pathname) ? pathname.slice(1) : pathname;
 }
 
 function getBreadcrumbs(rootUri: string, currentUri: string) {

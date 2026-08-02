@@ -31,12 +31,14 @@ export function useFolderViewer(rootElement: HTMLElement) {
 	const [favoriteUris, setFavoriteUris] = useState<string[]>([]);
 	const [favoriteNames, setFavoriteNames] = useState<Record<string, string>>({});
 	const [favoritesOpen, setFavoritesOpen] = useState(false);
+	const [pathInputOpen, setPathInputOpen] = useState(false);
 	const [hasClipboardEntry, setHasClipboardEntry] = useState(false);
 	const [cutUris, setCutUris] = useState<Set<string>>(new Set());
 	const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 	const [archiveOperation, setArchiveOperation] = useState<ArchiveOperation | null>(null);
 	const pendingSelectionUrisRef = useRef<string[] | null>(null);
 	const pendingScrollUriRef = useRef<string | null>(null);
+	const pendingPathNavigationRef = useRef(false);
 	const [status, setStatus] = useState('Loading...');
 
 	function persist(nextCurrentUri: string, nextHistory: string[]) {
@@ -64,6 +66,15 @@ export function useFolderViewer(rootElement: HTMLElement) {
 		setStatus('Loading...');
 		persist(target, nextHistory);
 		vscode.postMessage({ type: 'readDirectory', uri: target });
+	}
+
+	function navigatePath(path: string) {
+		pendingPathNavigationRef.current = true;
+		setPathInputOpen(false);
+		setContextMenu(null);
+		setFavoritesOpen(false);
+		setStatus('Loading...');
+		vscode.postMessage({ type: 'navigatePath', path, currentUri });
 	}
 
 	function openEntry(entry: FileEntry) {
@@ -155,6 +166,8 @@ export function useFolderViewer(rootElement: HTMLElement) {
 
 	const onMessage = useEffectEvent(({ data: message }: MessageEvent<ExtensionMessage>) => {
 			if (message.type === 'directory') {
+				const pathNavigation = pendingPathNavigationRef.current;
+				const nextHistory = pathNavigation && message.currentUri !== currentUri ? [...history, currentUri] : history;
 				const pendingSelectionUris = pendingSelectionUrisRef.current;
 				const nextSelectedUris = pendingSelectionUris
 					? new Set(message.entries.filter(entry => pendingSelectionUris.includes(entry.uri)).map(entry => entry.uri))
@@ -166,8 +179,10 @@ export function useFolderViewer(rootElement: HTMLElement) {
 				selection.selectUris(nextSelectedUris);
 				pendingScrollUriRef.current = scrollUri ?? null;
 				pendingSelectionUrisRef.current = null;
+				pendingPathNavigationRef.current = false;
 				setStatus('');
-				persist(message.currentUri, history);
+				if (pathNavigation) setHistory(nextHistory);
+				persist(message.currentUri, nextHistory);
 			} else if (message.type === 'archiveProgress') {
 				setArchiveOperation(current => current?.id === message.operationId && !current.cancelling
 					? { ...current, percent: Math.max(0, Math.min(100, message.percent)), detail: message.detail }
@@ -203,6 +218,8 @@ export function useFolderViewer(rootElement: HTMLElement) {
 				setEntries(current => current.map(entry => entry.uri === message.uri ? { ...entry, calculating: false } : entry));
 				setStatus(message.message);
 			} else if (message.type === 'error') {
+				if (pendingPathNavigationRef.current) setPathInputOpen(true);
+				pendingPathNavigationRef.current = false;
 				if (message.operationId) setArchiveOperation(current => current?.id === message.operationId ? null : current);
 				setStatus(message.message);
 			}
@@ -237,6 +254,7 @@ export function useFolderViewer(rootElement: HTMLElement) {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.key === 'Escape') {
 				event.preventDefault();
+				setPathInputOpen(false);
 				setContextMenu(null);
 				setFavoritesOpen(false);
 				selection.clearSelection();
@@ -244,7 +262,8 @@ export function useFolderViewer(rootElement: HTMLElement) {
 			}
 			if ((event.metaKey || event.ctrlKey) && !event.altKey) {
 				const key = event.key.toLowerCase();
-				if (key === 'a') { event.preventDefault(); selection.selectUris(entries.map(entry => entry.uri)); }
+				if (key === 'g' && event.shiftKey) { event.preventDefault(); setPathInputOpen(true); setContextMenu(null); setFavoritesOpen(false); }
+				else if (key === 'a') { event.preventDefault(); selection.selectUris(entries.map(entry => entry.uri)); }
 				else if (key === 'x' && selection.selectedEntries.length) { event.preventDefault(); postForSelection('setClipboard', 'cut'); }
 				else if (key === 'c' && selection.selectedEntries.length) { event.preventDefault(); postForSelection('setClipboard', 'copy'); }
 				else if (key === 'r') { event.preventDefault(); requestDirectory(currentUri, false); }
@@ -263,10 +282,10 @@ export function useFolderViewer(rootElement: HTMLElement) {
 	}, [entries, selection.selectedUris, hasClipboardEntry, currentUri]);
 
 	return {
-		state: { rootUri, currentUri, history, entries, selectedUris: selection.selectedUris, selectedEntries: selection.selectedEntries, favoriteUris, favoriteNames, favoritesOpen, hasClipboardEntry, cutUris, contextMenu, archiveOperation, status },
+		state: { rootUri, currentUri, history, entries, selectedUris: selection.selectedUris, selectedEntries: selection.selectedEntries, favoriteUris, favoriteNames, favoritesOpen, pathInputOpen, hasClipboardEntry, cutUris, contextMenu, archiveOperation, status },
 		actions: {
-			requestDirectory, navigateBack, openEntry, selectEntry: selection.selectEntry, clearSelection: selection.clearSelection, showContextMenu, showDirectoryContextMenu,
-			closeContextMenu: () => setContextMenu(null), setFavoritesOpen,
+			requestDirectory, navigateBack, navigatePath, openEntry, selectEntry: selection.selectEntry, clearSelection: selection.clearSelection, showContextMenu, showDirectoryContextMenu,
+			closeContextMenu: () => setContextMenu(null), setFavoritesOpen, setPathInputOpen,
 			setFavorite: (uri: string, favorite: boolean) => vscode.postMessage({ type: 'setFavorite', uri, favorite }),
 			renameFavorite: (uri: string) => vscode.postMessage({ type: 'renameFavorite', uri }),
 			cut: () => postForSelection('setClipboard', 'cut'), copy: () => postForSelection('setClipboard', 'copy'),

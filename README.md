@@ -69,6 +69,7 @@ Depending on the selection, the context menu provides:
 | Copy | `Cmd+C` | `Ctrl+C` |
 | Paste | `Cmd+V` | `Ctrl+V` |
 | Copy path | `Option+Cmd+C` | `Shift+Alt+C` |
+| Go to path | `Cmd+Shift+G` | `Ctrl+Shift+G` |
 | Rename selected item | `F2` or `Enter` | `F2` or `Enter` |
 | Move to trash | `Cmd+Backspace` | `Delete` |
 | Delete permanently | `Shift+Cmd+Backspace` | `Shift+Delete` |

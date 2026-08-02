@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { ArchiveOperation, compressEntries, extractArchive, OperationCancelledError } from '../archive';
 import { calculateDirectorySize, readDirectory } from '../filesystem/directoryService';
 import { getDisplayName } from '../filesystem/entry';
@@ -113,6 +114,10 @@ export class ViewerPanelController implements vscode.Disposable {
 			case 'readDirectory':
 				this.cancelDirectorySizeOperations();
 				await this.sendDirectory(getSafeUri(rootUri, message.uri));
+				return;
+			case 'navigatePath':
+				this.cancelDirectorySizeOperations();
+				await this.sendDirectory(resolveNavigationUri(rootUri, getSafeUri(rootUri, message.currentUri), message.path));
 				return;
 			case 'openFile':
 				await vscode.commands.executeCommand('vscode.open', getSafeUri(rootUri, message.uri));
@@ -349,6 +354,29 @@ export class ViewerPanelController implements vscode.Disposable {
 	private cancelDirectorySizeOperations(): void {
 		this.directorySizeOperations.forEach(operation => operation.cancel());
 	}
+}
+
+function resolveNavigationUri(rootUri: vscode.Uri, currentUri: vscode.Uri, value: string): vscode.Uri {
+	const target = value.trim();
+	if (!target) {
+		throw new Error('Enter a path to navigate to.');
+	}
+
+	let candidate: vscode.Uri;
+	if (/^[a-z][a-z\d+.-]*:/i.test(target) && !/^[a-z]:[\\/]/i.test(target)) {
+		candidate = vscode.Uri.parse(target, true);
+	} else if (rootUri.scheme === 'file') {
+		const filePath = /^\/[a-z]:[\\/]/i.test(target) ? target.slice(1) : target;
+		candidate = path.isAbsolute(filePath) || /^[a-z]:[\\/]/i.test(filePath) || filePath.startsWith('\\\\')
+			? vscode.Uri.file(filePath)
+			: vscode.Uri.joinPath(currentUri, filePath.replaceAll('\\', '/'));
+	} else if (target.startsWith('/')) {
+		candidate = currentUri.with({ path: path.posix.normalize(target) });
+	} else {
+		candidate = vscode.Uri.joinPath(currentUri, target.replaceAll('\\', '/'));
+	}
+
+	return getSafeUri(rootUri, candidate.toString());
 }
 
 async function assertDirectory(uri: vscode.Uri, errorMessage: string): Promise<void> {
