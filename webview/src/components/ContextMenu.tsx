@@ -22,6 +22,7 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 				<MenuItem icon="codicon-copy" label="Copy Path" onClick={closeAfter(() => actions.copyPath(state.contextMenu?.directoryUri))} />
 				<Separator />
 				<MenuItem icon="codicon-file-symlink-directory" label="Open in New Tab" onClick={closeAfter(() => actions.openFolder('openInNewTab'))} />
+				<MenuItem icon="codicon-folder-opened" label="Open in Current Window" onClick={closeAfter(() => actions.openFolder('openInCurrentWindow'))} />
 				<MenuItem icon="codicon-open-in-window" label="Open in New Window" onClick={closeAfter(() => actions.openFolder('openInNewWindow'))} />
 				<MenuItem icon="codicon-terminal" label="Open in Terminal" onClick={closeAfter(() => actions.openFolder('openInTerminal'))} />
 			</>}
@@ -34,8 +35,9 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 			<MenuItem icon="codicon-copy" label="Copy Path" shortcut={shortcut('⌥⌘C', 'Shift+Alt+C')} disabled={!hasSelection} onClick={closeAfter(actions.copyPath)} />
 			<MenuItem icon="codicon-rename" label="Rename" shortcut="F2" disabled={selection.length !== 1} onClick={closeAfter(actions.renameSelected)} />
 			{canOpenFolder && <>
+					<MenuItem icon="codicon-folder-opened" label="Open in Current Window" onClick={closeAfter(() => actions.openFolder('openInCurrentWindow'))} />
+					<MenuItem icon="codicon-open-in-window" label="Open in New Window" onClick={closeAfter(() => actions.openFolder('openInNewWindow'))} />
 				<MenuItem icon="codicon-file-symlink-directory" label="Open in New Tab" onClick={closeAfter(() => actions.openFolder('openInNewTab'))} />
-				<MenuItem icon="codicon-open-in-window" label="Open in New Window" onClick={closeAfter(() => actions.openFolder('openInNewWindow'))} />
 			</>}
 			{canOpenTerminal && <MenuItem icon="codicon-terminal" label="Open in Terminal" onClick={closeAfter(() => actions.openFolder('openInTerminal'))} />}
 			{hasSelection && <Separator />}

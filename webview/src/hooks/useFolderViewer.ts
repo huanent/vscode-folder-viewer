@@ -124,7 +124,7 @@ export function useFolderViewer(rootElement: HTMLElement) {
 		vscode.postMessage({ type: 'createDirectory', parentUri });
 	}
 
-	function openFolder(type: 'openInNewTab' | 'openInNewWindow' | 'openInTerminal') {
+	function openFolder(type: 'openInCurrentWindow' | 'openInNewTab' | 'openInNewWindow' | 'openInTerminal') {
 		const entry = contextMenu?.entry;
 		vscode.postMessage({ type, uri: contextMenu?.directoryUri ?? (entry?.type === 'directory' ? entry.uri : currentUri) });
 	}

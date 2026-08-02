@@ -146,6 +146,13 @@ export class ViewerPanelController implements vscode.Disposable {
 			case 'renameFavorite':
 				await this.manager.renameFavorite(getSafeUri(rootUri, message.uri));
 				return;
+			case 'openInCurrentWindow':
+				await this.openDirectory(
+					message.uri,
+					'Only folders can be opened in the current window.',
+					uri => vscode.commands.executeCommand('vscode.openFolder', uri, false)
+				);
+				return;
 			case 'openInNewTab':
 				await this.openDirectory(
 					message.uri,

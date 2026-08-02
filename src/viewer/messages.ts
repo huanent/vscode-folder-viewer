@@ -14,6 +14,7 @@ export type WebviewMessage =
 	| { type: 'copyPath'; uris: string[] }
 	| { type: 'setFavorite'; uri: string; favorite: boolean }
 	| { type: 'renameFavorite'; uri: string }
+	| { type: 'openInCurrentWindow'; uri: string }
 	| { type: 'openInNewTab'; uri: string }
 	| { type: 'openInNewWindow'; uri: string }
 	| { type: 'openInTerminal'; uri: string }
