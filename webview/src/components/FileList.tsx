@@ -13,15 +13,20 @@ const overscanRows = 8;
 
 export function FileList({ state, actions }: FileListProps) {
 	const [viewport, setViewport] = useState({ scrollTop: 0, height: 0 });
-	const virtual = state.entries.length > virtualizeThreshold;
+	const normalizedQuery = state.searchQuery.trim().toLocaleLowerCase();
+	const entries = normalizedQuery
+		? state.entries.filter(entry => entry.name.toLocaleLowerCase().includes(normalizedQuery))
+		: state.entries;
+	const virtual = entries.length > virtualizeThreshold;
 	const startIndex = virtual ? Math.max(0, Math.floor(viewport.scrollTop / rowHeight) - overscanRows) : 0;
-	const visibleRows = virtual ? Math.ceil(viewport.height / rowHeight) + overscanRows * 2 : state.entries.length;
-	const visibleEntries = virtual ? state.entries.slice(startIndex, startIndex + visibleRows) : state.entries;
+	const visibleRows = virtual ? Math.ceil(viewport.height / rowHeight) + overscanRows * 2 : entries.length;
+	const visibleEntries = virtual ? entries.slice(startIndex, startIndex + visibleRows) : entries;
 	const topSpacerHeight = virtual ? startIndex * rowHeight : 0;
-	const bottomSpacerHeight = virtual ? Math.max(0, (state.entries.length - startIndex - visibleEntries.length) * rowHeight) : 0;
+	const bottomSpacerHeight = virtual ? Math.max(0, (entries.length - startIndex - visibleEntries.length) * rowHeight) : 0;
 
 	return (
 		<main
+			data-file-list
 			className="h-[calc(100%-46px)] overflow-auto"
 			onScroll={event => {
 				const target = event.currentTarget;
@@ -33,7 +38,7 @@ export function FileList({ state, actions }: FileListProps) {
 			onContextMenu={event => actions.showContextMenu(event, null)}
 		>
 			<div className={`${fileGridClasses} sticky top-0 z-2 h-8 border-b border-border bg-app text-xs text-muted`}>
-				<span className="overflow-hidden text-ellipsis whitespace-nowrap pl-6">Name{state.entries.length ? ` (${state.entries.length})` : ''}</span><span className="max-[600px]:hidden">Created</span><span className="max-[600px]:hidden">Modified</span><span className="text-right">Size</span>
+				<span className="overflow-hidden text-ellipsis whitespace-nowrap pl-6">Name{state.entries.length ? ` (${entries.length}${normalizedQuery ? ` of ${state.entries.length}` : ''})` : ''}</span><span className="max-[600px]:hidden">Created</span><span className="max-[600px]:hidden">Modified</span><span className="text-right">Size</span>
 			</div>
 			<div className="py-1 pb-3" role="listbox" aria-label="Folder contents" aria-multiselectable="true">
 				{topSpacerHeight > 0 && <div style={{ height: topSpacerHeight }} />}
@@ -42,7 +47,7 @@ export function FileList({ state, actions }: FileListProps) {
 				))}
 				{bottomSpacerHeight > 0 && <div style={{ height: bottomSpacerHeight }} />}
 			</div>
-			{state.entries.length === 0 && !state.status && <div className="py-11 text-center text-muted">This folder is empty.</div>}
+			{entries.length === 0 && !state.status && <div className="py-11 text-center text-muted">{normalizedQuery ? 'No matching files.' : 'This folder is empty.'}</div>}
 			{state.status && <div className="py-11 text-center text-muted" role="status" aria-live="polite">{state.status}</div>}
 		</main>
 	);

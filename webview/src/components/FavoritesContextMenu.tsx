@@ -1,3 +1,5 @@
+import { useContextMenuPosition } from '../hooks/useContextMenuPosition';
+
 interface FavoritesContextMenuProps {
 	x: number;
 	y: number;
@@ -6,10 +8,9 @@ interface FavoritesContextMenuProps {
 }
 
 export function FavoritesContextMenu({ x, y, onRename, onDelete }: FavoritesContextMenuProps) {
-	const left = Math.max(8, Math.min(x, window.innerWidth - 200));
-	const top = Math.max(8, Math.min(y, window.innerHeight - 72));
+	const { menuRef, position } = useContextMenuPosition(x, y);
 	return (
-		<div className="fixed z-30 min-w-48 rounded border border-menu-border bg-menu p-1 shadow-menu" role="menu" style={{ left, top }} onClick={event => event.stopPropagation()}>
+		<div ref={menuRef} className="fixed z-30 min-w-48 rounded border border-menu-border bg-menu p-1 shadow-menu" role="menu" style={position} onClick={event => event.stopPropagation()}>
 			<MenuItem icon="codicon-rename" label="Rename" onClick={onRename} />
 			<MenuItem icon="codicon-trash" label="Delete" onClick={onDelete} />
 		</div>

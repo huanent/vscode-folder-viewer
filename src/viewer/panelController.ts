@@ -204,8 +204,9 @@ export class ViewerPanelController implements vscode.Disposable {
 	private async createDirectory(parentValue: string): Promise<void> {
 		const parentUri = getSafeUri(this.document.rootUri, parentValue);
 		await assertDirectory(parentUri, 'Subfolders can only be created inside a folder.');
-		if (await createDirectory(parentUri)) {
-			await this.panel.webview.postMessage({ type: 'createdDirectory' });
+		const directoryUri = await createDirectory(parentUri);
+		if (directoryUri) {
+			await this.panel.webview.postMessage({ type: 'createdDirectory', uri: directoryUri.toString(), parentUri: parentUri.toString() });
 		}
 	}
 
@@ -214,7 +215,7 @@ export class ViewerPanelController implements vscode.Disposable {
 		await assertDirectory(parentUri, 'Files can only be created inside a folder.');
 		const fileUri = await createFile(parentUri);
 		if (fileUri) {
-			await this.panel.webview.postMessage({ type: 'createdFile', uri: fileUri.toString() });
+			await this.panel.webview.postMessage({ type: 'createdFile', uri: fileUri.toString(), parentUri: parentUri.toString() });
 		}
 	}
 
@@ -277,7 +278,12 @@ export class ViewerPanelController implements vscode.Disposable {
 				onProgress: progress => void this.panel.webview.postMessage({ type: 'pasteProgress', operationId, operation: clipboardState.operation, ...progress })
 			});
 			await this.manager.removeCompletedCutEntries(result.completedUris);
-			await this.panel.webview.postMessage({ type: 'pasted', operationId, uris: result.pastedUris.map(uri => uri.toString()) });
+			await this.panel.webview.postMessage({
+				type: 'pasted',
+				operationId,
+				uris: result.pastedUris.map(uri => uri.toString()),
+				destinationUri: getSafeUri(this.document.rootUri, destinationValue).toString()
+			});
 		} finally {
 			this.pasteOperations.delete(operationId);
 			operation.dispose();

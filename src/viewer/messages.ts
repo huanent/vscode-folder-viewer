@@ -34,9 +34,9 @@ export type ExtensionMessage =
 	| { type: 'directory'; rootUri: string; currentUri: string; entries: FileEntry[] }
 	| { type: 'archiveProgress'; operationId: string; percent: number; detail: string }
 	| { type: 'pasteProgress'; operationId: string; operation: 'cut' | 'copy'; percent: number; detail: string }
-	| { type: 'createdDirectory' | 'deleted' | 'renamed' }
-	| { type: 'createdFile'; uri: string }
-	| { type: 'pasted'; operationId: string; uris: string[] }
+	| { type: 'createdDirectory' | 'createdFile'; uri: string; parentUri: string }
+	| { type: 'deleted' | 'renamed' }
+	| { type: 'pasted'; operationId: string; uris: string[]; destinationUri: string }
 	| { type: 'compressed' | 'extracted' | 'archiveCancelled' | 'archiveDismissed' | 'pasteCancelled'; operationId: string }
 	| { type: 'clipboardChanged'; hasEntry: boolean; operation: 'cut' | 'copy'; uris: string[] }
 	| { type: 'favoritesChanged'; favorites: FavoriteEntry[] }

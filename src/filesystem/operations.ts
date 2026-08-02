@@ -46,7 +46,7 @@ export async function renameEntry(targetUri: vscode.Uri): Promise<boolean> {
 	return true;
 }
 
-export async function createDirectory(parentUri: vscode.Uri): Promise<boolean> {
+export async function createDirectory(parentUri: vscode.Uri): Promise<vscode.Uri | undefined> {
 	const name = await vscode.window.showInputBox({
 		title: 'New Folder',
 		prompt: 'Enter a folder name',
@@ -55,11 +55,12 @@ export async function createDirectory(parentUri: vscode.Uri): Promise<boolean> {
 		validateInput: value => validateEntryName(value)
 	});
 	if (name === undefined) {
-		return false;
+		return undefined;
 	}
 
-	await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(parentUri, name));
-	return true;
+	const directoryUri = vscode.Uri.joinPath(parentUri, name);
+	await vscode.workspace.fs.createDirectory(directoryUri);
+	return directoryUri;
 }
 
 export async function createFile(parentUri: vscode.Uri): Promise<vscode.Uri | undefined> {

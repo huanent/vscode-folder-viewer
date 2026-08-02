@@ -7,6 +7,7 @@ type ToolbarProps = Pick<FolderViewerModel, 'state' | 'actions'>;
 export function Toolbar({ state, actions }: ToolbarProps) {
 	const breadcrumbsRef = useRef<HTMLElement>(null);
 	const pathInputRef = useRef<HTMLInputElement>(null);
+	const searchInputRef = useRef<HTMLInputElement>(null);
 	const [pathValue, setPathValue] = useState('');
 	const favorite = state.favoriteUris.includes(state.currentUri);
 	const favoriteLabel = favorite ? 'Remove current folder from favorites' : 'Add current folder to favorites';
@@ -22,6 +23,11 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 		requestAnimationFrame(() => pathInputRef.current?.select());
 	}, [state.pathInputOpen, state.currentUri]);
 
+	useEffect(() => {
+		if (!state.searchOpen) return;
+		requestAnimationFrame(() => searchInputRef.current?.focus());
+	}, [state.searchOpen]);
+
 	return (
 		<header className="grid h-11.5 grid-cols-[auto_minmax(0,1fr)_28px] items-center gap-1 border-b border-border bg-app max-[600px]:gap-1.5 max-[600px]:px-2">
 			<div className="flex items-center gap-0.5" role="toolbar" aria-label="Navigation">
@@ -29,7 +35,28 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 				<IconButton icon="codicon-refresh" title="Refresh" aria-label="Refresh" onClick={() => actions.requestDirectory(state.currentUri, false)} />
 			</div>
 			<div className="grid h-7.5 min-w-0 grid-cols-[minmax(0,1fr)_30px] items-center overflow-hidden rounded border border-input-border bg-input">
-				{state.pathInputOpen ? (
+				{state.searchOpen ? (
+					<div className="flex h-full min-w-0 items-center gap-1 pl-1.5">
+						<i className="codicon codicon-search shrink-0 text-muted" aria-hidden="true" />
+						<input
+							ref={searchInputRef}
+							value={state.searchQuery}
+							onChange={event => actions.setSearchQuery(event.target.value)}
+							onKeyDown={event => {
+								if (event.key === 'Escape') {
+									event.preventDefault();
+									event.stopPropagation();
+									actions.setSearchQuery('');
+									actions.setSearchOpen(false);
+								}
+							}}
+							className="h-full min-w-0 flex-1 border-0 bg-transparent text-foreground outline-none"
+							aria-label="Search files"
+							placeholder="Search files"
+							spellCheck={false}
+						/>
+					</div>
+				) : state.pathInputOpen ? (
 					<form className="h-full min-w-0" onSubmit={event => { event.preventDefault(); actions.navigatePath(pathValue); }}>
 						<input
 							ref={pathInputRef}
@@ -65,15 +92,25 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 						</span>
 					))}
 				</nav>}
-				<IconButton
-					icon={favorite ? 'codicon-star-full' : 'codicon-star-empty'}
-					active={favorite}
-					className="mr-1 rounded-none hover:bg-transparent"
-					title={favoriteLabel}
-					aria-label={favoriteLabel}
-					aria-pressed={favorite}
-					onClick={() => actions.setFavorite(state.currentUri, !favorite)}
-				/>
+				{state.searchOpen ? (
+					<IconButton
+						icon="codicon-close"
+						className="mr-1 rounded-none hover:bg-transparent"
+						title="Close search"
+						aria-label="Close search"
+						onClick={() => { actions.setSearchQuery(''); actions.setSearchOpen(false); }}
+					/>
+				) : (
+					<IconButton
+						icon={favorite ? 'codicon-star-full' : 'codicon-star-empty'}
+						active={favorite}
+						className="mr-1 rounded-none hover:bg-transparent"
+						title={favoriteLabel}
+						aria-label={favoriteLabel}
+						aria-pressed={favorite}
+						onClick={() => actions.setFavorite(state.currentUri, !favorite)}
+					/>
+				)}
 			</div>
 			<IconButton
 				icon="codicon-bookmark"
