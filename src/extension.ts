@@ -22,8 +22,9 @@ async function resolveOpenTarget(argument?: vscode.Uri): Promise<OpenTarget> {
 	};
 }
 
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
 	const viewerManager = new ViewerManager(context);
+	await viewerManager.initialize();
 	viewerManager.register();
 
 	context.subscriptions.push(

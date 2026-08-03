@@ -3,12 +3,11 @@ import * as vscode from 'vscode';
 import { getDisplayName } from '../filesystem/entry';
 import { ClipboardState } from '../filesystem/operations';
 import { ViewerDocument } from './document';
+import { FavoritesStore } from './favoritesStore';
 import { ViewerPanelController } from './panelController';
 import { isUriWithinRoot } from './uri';
 
 const viewerViewType = 'folderViewer.editor';
-const favoritesStorageKey = 'folderViewer.favorites';
-const favoriteNamesStorageKey = 'folderViewer.favoriteNames';
 export const webviewFocusContextKey = 'folderViewer.webviewFocus';
 
 type PanelEntry = {
@@ -18,10 +17,17 @@ type PanelEntry = {
 
 export class ViewerManager implements vscode.Disposable {
 	private clipboardState: ClipboardState | undefined;
+	private readonly favoritesStore: FavoritesStore;
 	private readonly panels = new Map<vscode.WebviewPanel, PanelEntry>();
 	private readonly disposables: vscode.Disposable[] = [];
 
-	constructor(private readonly context: vscode.ExtensionContext) { }
+	constructor(private readonly context: vscode.ExtensionContext) {
+		this.favoritesStore = new FavoritesStore(context);
+	}
+
+	async initialize(): Promise<void> {
+		await this.favoritesStore.initialize();
+	}
 
 	register(): void {
 		const editorProvider: vscode.CustomReadonlyEditorProvider<ViewerDocument> = {
@@ -60,7 +66,7 @@ export class ViewerManager implements vscode.Disposable {
 	}
 
 	getFavorites(): string[] {
-		return this.context.globalState.get<string[]>(favoritesStorageKey, []);
+		return this.favoritesStore.getFavorites();
 	}
 
 	async updateFavorite(targetUri: vscode.Uri, favorite: boolean): Promise<void> {
@@ -69,11 +75,11 @@ export class ViewerManager implements vscode.Disposable {
 		const updatedFavorites = favorite
 			? [...new Set([...favorites, target])]
 			: favorites.filter(uri => uri !== target);
-		await this.context.globalState.update(favoritesStorageKey, updatedFavorites);
+		await this.favoritesStore.setFavorites(updatedFavorites);
 		if (!favorite) {
 			const names = this.getFavoriteNames();
 			delete names[target];
-			await this.context.globalState.update(favoriteNamesStorageKey, names);
+			await this.favoritesStore.setNames(names);
 		}
 		await this.broadcastFavorites(updatedFavorites);
 	}
@@ -96,7 +102,7 @@ export class ViewerManager implements vscode.Disposable {
 			return;
 		}
 		names[target] = newName.trim();
-		await this.context.globalState.update(favoriteNamesStorageKey, names);
+		await this.favoritesStore.setNames(names);
 		await this.broadcastFavorites(this.getFavorites());
 	}
 
@@ -200,7 +206,7 @@ export class ViewerManager implements vscode.Disposable {
 	}
 
 	private getFavoriteNames(): Record<string, string> {
-		return { ...this.context.globalState.get<Record<string, string>>(favoriteNamesStorageKey, {}) };
+		return this.favoritesStore.getNames();
 	}
 
 	private getFavoriteEntries(rootUri: vscode.Uri, favorites: string[]) {
