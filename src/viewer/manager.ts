@@ -90,7 +90,7 @@ export class ViewerManager implements vscode.Disposable {
 			return;
 		}
 		const names = this.getFavoriteNames();
-		const currentName = names[target] ?? getDisplayName(targetUri);
+		const currentName = names[target] ?? targetUri.fsPath;
 		const newName = await vscode.window.showInputBox({
 			title: 'Rename Favorite',
 			prompt: 'Enter a display name',

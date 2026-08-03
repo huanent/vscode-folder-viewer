@@ -34,7 +34,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 				<IconButton icon="codicon-arrow-left" title="Back" aria-label="Back" disabled={!state.history.length} onClick={actions.navigateBack} />
 				<IconButton icon="codicon-refresh" title="Refresh" aria-label="Refresh" onClick={() => actions.requestDirectory(state.currentUri, false)} />
 			</div>
-			<div className="grid h-7.5 min-w-0 grid-cols-[minmax(0,1fr)_30px] items-center overflow-hidden rounded border border-input-border bg-input">
+			<div className="grid h-7.5 min-w-0 grid-cols-[minmax(0,1fr)_28px] items-center overflow-hidden rounded border border-input-border bg-input">
 				{state.searchOpen ? (
 					<div className="flex h-full min-w-0 items-center gap-1 pl-1.5">
 						<i className="codicon codicon-search shrink-0 text-muted" aria-hidden="true" />
@@ -95,7 +95,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 				{state.searchOpen ? (
 					<IconButton
 						icon="codicon-close"
-						className="mr-1 rounded-none hover:bg-transparent"
+						className="rounded-none hover:bg-transparent"
 						title="Close search"
 						aria-label="Close search"
 						onClick={() => { actions.setSearchQuery(''); actions.setSearchOpen(false); }}
@@ -104,7 +104,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					<IconButton
 						icon={favorite ? 'codicon-star-full' : 'codicon-star-empty'}
 						active={favorite}
-						className="mr-1 rounded-none hover:bg-transparent"
+						className="rounded-none hover:bg-transparent"
 						title={favoriteLabel}
 						aria-label={favoriteLabel}
 						aria-pressed={favorite}
