@@ -85,6 +85,14 @@ export function useFolderViewer(rootElement: HTMLElement) {
 		vscode.postMessage({ type: 'navigatePath', path, currentUri });
 	}
 
+	function navigateQuickLocation(location: 'desktop' | 'downloads' | 'documents') {
+		pendingPathNavigationRef.current = true;
+		setFavoritesOpen(false);
+		setContextMenu(null);
+		setStatus('Loading...');
+		vscode.postMessage({ type: 'navigateQuickLocation', location });
+	}
+
 	function openEntry(entry: FileEntry) {
 		if (entry.type === 'directory') {
 			requestDirectory(entry.uri, true);
@@ -313,7 +321,7 @@ export function useFolderViewer(rootElement: HTMLElement) {
 	return {
 		state: { rootUri, currentUri, history, entries, selectedUris: selection.selectedUris, selectedEntries: selection.selectedEntries, favoriteUris, favoriteNames, favoritesOpen, pathInputOpen, searchOpen, searchQuery, hasClipboardEntry, cutUris, contextMenu, archiveOperation, status },
 		actions: {
-			requestDirectory, navigateBack, navigatePath, openEntry, selectEntry: selection.selectEntry, clearSelection: selection.clearSelection, showContextMenu, showDirectoryContextMenu,
+			requestDirectory, navigateBack, navigatePath, navigateQuickLocation, openEntry, selectEntry: selection.selectEntry, clearSelection: selection.clearSelection, showContextMenu, showDirectoryContextMenu,
 			closeContextMenu: () => setContextMenu(null), setFavoritesOpen, setPathInputOpen, setSearchOpen, setSearchQuery,
 			setFavorite: (uri: string, favorite: boolean) => vscode.postMessage({ type: 'setFavorite', uri, favorite }),
 			renameFavorite: (uri: string) => vscode.postMessage({ type: 'renameFavorite', uri }),

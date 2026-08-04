@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as os from 'os';
 import * as path from 'path';
 import { ArchiveOperation, compressEntries, extractArchive, OperationCancelledError } from '../archive';
 import { calculateDirectorySize, readDirectory } from '../filesystem/directoryService';
@@ -114,6 +115,10 @@ export class ViewerPanelController implements vscode.Disposable {
 			case 'readDirectory':
 				this.cancelDirectorySizeOperations();
 				await this.sendDirectory(getSafeUri(rootUri, message.uri));
+				return;
+			case 'navigateQuickLocation':
+				this.cancelDirectorySizeOperations();
+				await this.sendDirectory(resolveQuickLocationUri(rootUri, message.location));
 				return;
 			case 'navigatePath':
 				this.cancelDirectorySizeOperations();
@@ -360,6 +365,19 @@ export class ViewerPanelController implements vscode.Disposable {
 	private cancelDirectorySizeOperations(): void {
 		this.directorySizeOperations.forEach(operation => operation.cancel());
 	}
+}
+
+function resolveQuickLocationUri(
+	rootUri: vscode.Uri,
+	location: 'desktop' | 'downloads' | 'documents'
+): vscode.Uri {
+	const homeDirectory = os.homedir();
+	const directoryNames = {
+		desktop: 'Desktop',
+		downloads: 'Downloads',
+		documents: 'Documents'
+	};
+	return getSafeUri(rootUri, vscode.Uri.file(path.join(homeDirectory, directoryNames[location])).toString());
 }
 
 function resolveNavigationUri(rootUri: vscode.Uri, currentUri: vscode.Uri, value: string): vscode.Uri {

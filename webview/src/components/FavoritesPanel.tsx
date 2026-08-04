@@ -6,6 +6,12 @@ import { IconButton } from './IconButton';
 
 type FavoritesPanelProps = Pick<FolderViewerModel, 'state' | 'actions'>;
 
+const quickLocations = [
+	{ location: 'desktop', icon: 'codicon-device-desktop', label: 'Desktop' },
+	{ location: 'documents', icon: 'codicon-file-text', label: 'Documents' },
+	{ location: 'downloads', icon: 'codicon-download', label: 'Downloads' },
+] as const;
+
 export function FavoritesPanel({ state, actions }: FavoritesPanelProps) {
 	const [contextMenu, setContextMenu] = useState<{ uri: string; x: number; y: number } | null>(null);
 	if (!state.favoritesOpen) return null;
@@ -20,6 +26,20 @@ export function FavoritesPanel({ state, actions }: FavoritesPanelProps) {
 				<span>Favorites</span>
 				<IconButton icon="codicon-close" title="Close favorites" aria-label="Close favorites" onClick={() => actions.setFavoritesOpen(false)} />
 			</div>
+			<nav className="mb-1 grid grid-cols-3 border-b border-menu-separator pb-1" aria-label="Quick locations">
+				{quickLocations.map(({ location, icon, label }) => (
+					<button
+						key={location}
+						type="button"
+						title={label}
+						aria-label={label}
+						className="grid h-8 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-icon hover:bg-menu-selection hover:text-menu-selection-foreground focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-focus"
+						onClick={() => actions.navigateQuickLocation(location)}
+					>
+						<i className={`codicon ${icon} text-base`} aria-hidden="true" />
+					</button>
+				))}
+			</nav>
 			{state.favoriteUris.length === 0 ? (
 				<div className="px-2 py-4.5 text-center text-muted">No favorite folders.</div>
 			) : state.favoriteUris.map(uri => {
