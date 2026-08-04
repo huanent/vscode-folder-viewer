@@ -30,7 +30,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 	context.subscriptions.push(
 		viewerManager,
 		vscode.commands.registerCommand('folderViewer.open', async (argument?: vscode.Uri) => {
+			if (!argument && viewerManager.revealFolderViewer()) {
+				return;
+			}
 			const { rootUri, currentUri } = await resolveOpenTarget(argument);
+			await viewerManager.openFolderViewer(rootUri, undefined, {
+				currentUri: currentUri.toString(),
+				history: []
+			});
+		}),
+		vscode.commands.registerCommand('folderViewer.openNewTab', async () => {
+			const { rootUri, currentUri } = await resolveOpenTarget();
 			await viewerManager.openFolderViewer(rootUri, undefined, {
 				currentUri: currentUri.toString(),
 				history: []

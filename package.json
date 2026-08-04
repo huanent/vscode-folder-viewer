@@ -2,7 +2,7 @@
   "name": "folder-viewer",
   "displayName": "Folder Viewer",
   "description": "Explore a folder in the editor view",
-  "version": "3.4.2",
+  "version": "3.4.3",
   "publisher": "huanent",
   "icon": "resources/logo.png",
   "repository": {
@@ -48,7 +48,7 @@
         "mac": "cmd+shift+;"
       },
       {
-        "command": "folderViewer.open",
+        "command": "folderViewer.openNewTab",
         "key": "ctrl+t",
         "mac": "cmd+t",
         "when": "activeCustomEditorId == folderViewer.editor && folderViewer.webviewFocus"

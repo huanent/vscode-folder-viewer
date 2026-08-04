@@ -106,6 +106,15 @@ export class ViewerManager implements vscode.Disposable {
 		await this.broadcastFavorites(this.getFavorites());
 	}
 
+	revealFolderViewer(): boolean {
+		const panel = [...this.panels.keys()].at(-1);
+		if (!panel) {
+			return false;
+		}
+		panel.reveal(panel.viewColumn, false);
+		return true;
+	}
+
 	async openFolderViewer(
 		rootUri: vscode.Uri,
 		viewColumn: vscode.ViewColumn = vscode.ViewColumn.Active,
