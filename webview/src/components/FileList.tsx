@@ -1,10 +1,13 @@
 import type { MouseEvent } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { FolderViewerModel } from '../hooks/useFolderViewer';
 import { formatDate, formatSize, getFileIcon } from '../lib/formatters';
 import type { FileEntry } from '../types';
 
 type FileListProps = Pick<FolderViewerModel, 'state' | 'actions'>;
+type SortKey = 'name' | 'created' | 'modified' | 'size';
+type SortDirection = 'ascending' | 'descending';
+type SortState = { key: SortKey; direction: SortDirection } | null;
 
 const fileGridClasses = 'grid grid-cols-[minmax(180px,1fr)_minmax(150px,210px)_minmax(150px,210px)_90px] items-center gap-x-4 px-2.5 max-[600px]:grid-cols-[minmax(140px,1fr)_72px]';
 const rowHeight = 32;
@@ -13,16 +16,25 @@ const overscanRows = 8;
 
 export function FileList({ state, actions }: FileListProps) {
 	const [viewport, setViewport] = useState({ scrollTop: 0, height: 0 });
+	const [sort, setSort] = useState<SortState>(null);
 	const normalizedQuery = state.searchQuery.trim().toLocaleLowerCase();
-	const entries = normalizedQuery
-		? state.entries.filter(entry => entry.name.toLocaleLowerCase().includes(normalizedQuery))
-		: state.entries;
+	const entries = useMemo(() => {
+		const filteredEntries = normalizedQuery
+			? state.entries.filter(entry => entry.name.toLocaleLowerCase().includes(normalizedQuery))
+			: state.entries;
+		if (!sort) return filteredEntries;
+		const direction = sort.direction === 'ascending' ? 1 : -1;
+		return [...filteredEntries].sort((left, right) => direction * compareEntries(left, right, sort.key));
+	}, [state.entries, normalizedQuery, sort]);
 	const virtual = entries.length > virtualizeThreshold;
 	const startIndex = virtual ? Math.max(0, Math.floor(viewport.scrollTop / rowHeight) - overscanRows) : 0;
 	const visibleRows = virtual ? Math.ceil(viewport.height / rowHeight) + overscanRows * 2 : entries.length;
 	const visibleEntries = virtual ? entries.slice(startIndex, startIndex + visibleRows) : entries;
 	const topSpacerHeight = virtual ? startIndex * rowHeight : 0;
 	const bottomSpacerHeight = virtual ? Math.max(0, (entries.length - startIndex - visibleEntries.length) * rowHeight) : 0;
+	const toggleSort = (key: SortKey, direction: SortDirection) => {
+		setSort(current => current?.key === key && current.direction === direction ? null : { key, direction });
+	};
 
 	return (
 		<main
@@ -38,7 +50,10 @@ export function FileList({ state, actions }: FileListProps) {
 			onContextMenu={event => actions.showContextMenu(event, null)}
 		>
 			<div className={`${fileGridClasses} sticky top-0 z-2 h-8 border-b border-border bg-app text-xs text-muted`}>
-				<span className="overflow-hidden text-ellipsis whitespace-nowrap pl-6">Name{state.entries.length ? ` (${entries.length}${normalizedQuery ? ` of ${state.entries.length}` : ''})` : ''}</span><span className="max-[600px]:hidden">Created</span><span className="max-[600px]:hidden">Modified</span><span className="text-right">Size</span>
+				<SortHeader label={`Name${state.entries.length ? ` (${entries.length}${normalizedQuery ? ` of ${state.entries.length}` : ''})` : ''}`} sortKey="name" sort={sort} onSort={toggleSort} className="pl-6" />
+				<SortHeader label="Created" sortKey="created" sort={sort} onSort={toggleSort} className="max-[600px]:hidden" />
+				<SortHeader label="Modified" sortKey="modified" sort={sort} onSort={toggleSort} className="max-[600px]:hidden" />
+				<SortHeader label="Size" sortKey="size" sort={sort} onSort={toggleSort} className="justify-end" />
 			</div>
 			<div className="py-1 pb-3" role="listbox" aria-label="Folder contents" aria-multiselectable="true">
 				{topSpacerHeight > 0 && <div style={{ height: topSpacerHeight }} />}
@@ -51,6 +66,47 @@ export function FileList({ state, actions }: FileListProps) {
 			{state.status && <div className="py-11 text-center text-muted" role="status" aria-live="polite">{state.status}</div>}
 		</main>
 	);
+}
+
+function SortHeader({ label, sortKey, sort, onSort, className = '' }: { label: string; sortKey: SortKey; sort: SortState; onSort: (key: SortKey, direction: SortDirection) => void; className?: string }) {
+	const columnLabel = label.replace(/ \(.*/, '');
+	return (
+		<div className={`group flex h-full min-w-0 items-center overflow-hidden ${className}`}>
+			<span className="overflow-hidden text-ellipsis whitespace-nowrap">{label}</span>
+			<span className={`ml-auto grid h-5 w-5 shrink-0 grid-rows-2 place-items-center ${sort?.key === sortKey ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'}`}>
+				<SortButton label={`Sort ascending by ${columnLabel}`} active={sort?.key === sortKey && sort.direction === 'ascending'} direction="ascending" onClick={() => onSort(sortKey, 'ascending')} />
+				<SortButton label={`Sort descending by ${columnLabel}`} active={sort?.key === sortKey && sort.direction === 'descending'} direction="descending" onClick={() => onSort(sortKey, 'descending')} />
+			</span>
+		</div>
+	);
+}
+
+function SortButton({ label, active, direction, onClick }: { label: string; active: boolean; direction: SortDirection; onClick: () => void }) {
+	return (
+		<button
+			type="button"
+			title={label}
+			aria-label={label}
+			aria-pressed={active}
+			className="inline-grid h-2.5 w-5 cursor-pointer place-items-center border-0 bg-transparent p-0 text-muted hover:text-foreground focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-focus"
+			onClick={event => {
+				onClick();
+				if (event.detail > 0) event.currentTarget.blur();
+			}}
+		>
+			<span className={`size-0 border-x-4 border-x-transparent ${direction === 'ascending' ? 'border-b-[6px] border-b-current' : 'border-t-[6px] border-t-current'} ${active ? 'text-foreground opacity-100' : 'opacity-55'}`} />
+		</button>
+	);
+}
+
+function compareEntries(left: FileEntry, right: FileEntry, key: SortKey) {
+	if (key === 'name') return left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' });
+	if (key === 'size') return getEntrySize(left) - getEntrySize(right);
+	return left[key] - right[key];
+}
+
+function getEntrySize(entry: FileEntry) {
+	return entry.type === 'directory' ? entry.calculatedSize ?? 0 : entry.size;
 }
 
 function FileRow({ entry, state, actions }: { entry: FileEntry } & FileListProps) {
