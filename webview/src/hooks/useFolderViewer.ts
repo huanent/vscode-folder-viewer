@@ -250,7 +250,10 @@ export function useFolderViewer(rootElement: HTMLElement) {
 	useEffect(() => {
 		window.addEventListener('message', onMessage);
 		const onFocus = () => vscode.postMessage({ type: 'focusChanged', focused: true });
-		const onBlur = () => vscode.postMessage({ type: 'focusChanged', focused: false });
+		const onBlur = () => {
+			setFavoritesOpen(false);
+			vscode.postMessage({ type: 'focusChanged', focused: false });
+		};
 		window.addEventListener('focus', onFocus);
 		window.addEventListener('blur', onBlur);
 		vscode.postMessage({ type: 'ready', currentUri: initial.currentUri });
