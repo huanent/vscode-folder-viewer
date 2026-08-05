@@ -5,7 +5,7 @@ export type OutboundMessage =
 	| { type: 'focusChanged'; focused: boolean }
 	| { type: 'stateChanged'; currentUri: string; history: string[] }
 	| { type: 'readDirectory'; uri: string }
-	| { type: 'navigateQuickLocation'; location: 'desktop' | 'downloads' | 'documents' }
+	| { type: 'navigateQuickLocation'; location: 'desktop' | 'downloads' | 'documents' | 'tmp' }
 	| { type: 'openFile'; uri: string }
 	| { type: 'calculateDirectorySize'; uri: string }
 	| { type: 'setClipboard'; uris: string[]; operation: 'cut' | 'copy' }

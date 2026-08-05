@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { FolderViewerModel } from '../hooks/useFolderViewer';
 import { IconButton } from './IconButton';
 
@@ -17,10 +17,16 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 		breadcrumbsRef.current?.scrollTo({ left: breadcrumbsRef.current.scrollWidth });
 	}, [state.currentUri]);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (!state.pathInputOpen) return;
 		setPathValue(getPathInputValue(state.currentUri));
-		requestAnimationFrame(() => pathInputRef.current?.select());
+		const frame = requestAnimationFrame(() => {
+			const input = pathInputRef.current;
+			if (!input) return;
+			input.focus({ preventScroll: true });
+			input.setSelectionRange(0, input.value.length);
+		});
+		return () => cancelAnimationFrame(frame);
 	}, [state.pathInputOpen, state.currentUri]);
 
 	useEffect(() => {
@@ -42,6 +48,11 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 							ref={searchInputRef}
 							value={state.searchQuery}
 							onChange={event => actions.setSearchQuery(event.target.value)}
+							onBlur={event => {
+								if (event.currentTarget.value.trim()) return;
+								actions.setSearchQuery('');
+								actions.setSearchOpen(false);
+							}}
 							onKeyDown={event => {
 								if (event.key === 'Escape') {
 									event.preventDefault();
@@ -62,6 +73,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 							ref={pathInputRef}
 							value={pathValue}
 							onChange={event => setPathValue(event.target.value)}
+							onBlur={() => actions.setPathInputOpen(false)}
 							onKeyDown={event => {
 								if (event.key === 'Escape') {
 									event.stopPropagation();
@@ -73,7 +85,18 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 							spellCheck={false}
 						/>
 					</form>
-				) : <nav ref={breadcrumbsRef} className="scrollbar-none flex h-full min-w-0 items-center overflow-x-auto pl-1 [&::-webkit-scrollbar]:hidden" aria-label="Folder path">
+				) : <nav
+					ref={breadcrumbsRef}
+					className="scrollbar-none flex h-full min-w-0 cursor-text items-center overflow-x-auto pl-1 [&::-webkit-scrollbar]:hidden"
+					aria-label="Folder path"
+					onClick={event => {
+						if (event.button !== 0) return;
+						event.stopPropagation();
+						actions.closeContextMenu();
+						actions.setFavoritesOpen(false);
+						actions.setPathInputOpen(true);
+					}}
+				>
 					{crumbs.map((crumb, index) => (
 						<span className="flex shrink-0 items-center" key={crumb.uri}>
 							{index > 0 && <i className="codicon codicon-chevron-right shrink-0 text-breadcrumb" />}
@@ -84,7 +107,10 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 								aria-current={index === crumbs.length - 1 ? 'page' : undefined}
 								disabled={index === crumbs.length - 1}
 								className="flex max-w-55 shrink-0 cursor-pointer items-center overflow-hidden rounded-sm border-0 bg-transparent px-1.25 py-0.5 text-breadcrumb text-ellipsis whitespace-nowrap hover:bg-breadcrumb-hover hover:text-breadcrumb-focus focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-focus disabled:cursor-default disabled:font-semibold disabled:text-breadcrumb-active"
-								onClick={() => actions.requestDirectory(crumb.uri, true)}
+								onClick={event => {
+									event.stopPropagation();
+									actions.requestDirectory(crumb.uri, true);
+								}}
 								onContextMenu={event => actions.showDirectoryContextMenu(event, crumb.uri)}
 							>
 								{index === 0 ? <i className={`codicon codicon-home ${index === crumbs.length - 1 ? 'breadcrumb-active-icon' : ''}`} aria-hidden="true" /> : crumb.label}

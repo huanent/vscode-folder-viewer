@@ -85,7 +85,7 @@ export function useFolderViewer(rootElement: HTMLElement) {
 		vscode.postMessage({ type: 'navigatePath', path, currentUri });
 	}
 
-	function navigateQuickLocation(location: 'desktop' | 'downloads' | 'documents') {
+	function navigateQuickLocation(location: 'desktop' | 'downloads' | 'documents' | 'tmp') {
 		pendingPathNavigationRef.current = true;
 		setFavoritesOpen(false);
 		setContextMenu(null);
@@ -295,11 +295,12 @@ export function useFolderViewer(rootElement: HTMLElement) {
 				selection.clearSelection();
 				return;
 			}
+			const target = event.target as HTMLElement;
+			const key = event.key.toLowerCase();
+			const searchShortcut = (event.metaKey || event.ctrlKey) && !event.altKey && key === 'f';
+			if (target.matches('input, textarea, [contenteditable="true"]') && !searchShortcut) return;
 			if ((event.metaKey || event.ctrlKey) && !event.altKey) {
-				const key = event.key.toLowerCase();
 				if (key === 'f') { event.preventDefault(); setSearchOpen(true); setPathInputOpen(false); setContextMenu(null); setFavoritesOpen(false); }
-				else if ((event.target as HTMLElement).matches('input, textarea, [contenteditable="true"]')) return;
-				else if (key === 'g' && event.shiftKey) { event.preventDefault(); setPathInputOpen(true); setSearchOpen(false); setSearchQuery(''); setContextMenu(null); setFavoritesOpen(false); }
 				else if (key === 'a') { event.preventDefault(); selection.selectUris(entries.map(entry => entry.uri)); }
 				else if (key === 'x' && selection.selectedEntries.length) { event.preventDefault(); postForSelection('setClipboard', 'cut'); }
 				else if (key === 'c' && selection.selectedEntries.length) { event.preventDefault(); postForSelection('setClipboard', 'copy'); }

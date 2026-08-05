@@ -369,8 +369,14 @@ export class ViewerPanelController implements vscode.Disposable {
 
 function resolveQuickLocationUri(
 	rootUri: vscode.Uri,
-	location: 'desktop' | 'downloads' | 'documents'
+	location: 'desktop' | 'downloads' | 'documents' | 'tmp'
 ): vscode.Uri {
+	if (location === 'tmp') {
+		const sharedTempDirectory = process.platform === 'win32'
+			? path.join(process.env.SystemRoot ?? 'C:\\Windows', 'Temp')
+			: '/tmp';
+		return getSafeUri(rootUri, vscode.Uri.file(sharedTempDirectory).toString());
+	}
 	const homeDirectory = os.homedir();
 	const directoryNames = {
 		desktop: 'Desktop',

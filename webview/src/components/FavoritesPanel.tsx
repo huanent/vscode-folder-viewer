@@ -10,6 +10,7 @@ const quickLocations = [
 	{ location: 'desktop', icon: 'codicon-device-desktop', label: 'Desktop' },
 	{ location: 'documents', icon: 'codicon-file-text', label: 'Documents' },
 	{ location: 'downloads', icon: 'codicon-download', label: 'Downloads' },
+	{ location: 'tmp', icon: 'codicon-history', label: 'Tmp' },
 ] as const;
 
 export function FavoritesPanel({ state, actions }: FavoritesPanelProps) {
@@ -26,7 +27,7 @@ export function FavoritesPanel({ state, actions }: FavoritesPanelProps) {
 				<span>Favorites</span>
 				<IconButton icon="codicon-close" title="Close favorites" aria-label="Close favorites" onClick={() => actions.setFavoritesOpen(false)} />
 			</div>
-			<nav className="mb-1 grid grid-cols-3 border-b border-menu-separator pb-1" aria-label="Quick locations">
+			<nav className="mb-1 grid grid-cols-4 border-b border-menu-separator pb-1" aria-label="Quick locations">
 				{quickLocations.map(({ location, icon, label }) => (
 					<button
 						key={location}

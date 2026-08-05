@@ -5,7 +5,7 @@ export type WebviewMessage =
 	| { type: 'focusChanged'; focused: boolean }
 	| { type: 'stateChanged'; currentUri: string; history: string[] }
 	| { type: 'readDirectory'; uri: string }
-	| { type: 'navigateQuickLocation'; location: 'desktop' | 'downloads' | 'documents' }
+	| { type: 'navigateQuickLocation'; location: 'desktop' | 'downloads' | 'documents' | 'tmp' }
 	| { type: 'navigatePath'; path: string; currentUri: string }
 	| { type: 'openFile'; uri: string }
 	| { type: 'calculateDirectorySize'; uri: string }
