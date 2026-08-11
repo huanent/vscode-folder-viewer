@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent, type ReactNode } from 'react';
 import type { FolderViewerModel } from '../hooks/useFolderViewer';
 import { useContextMenuPosition } from '../hooks/useContextMenuPosition';
 import { isMac } from '../lib/formatters';
@@ -19,24 +19,79 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 
 	return (
 		<div ref={menuRef} className="fixed z-20 min-w-48 rounded border border-menu-border bg-menu p-1 shadow-menu" role="menu" style={position} onClick={event => event.stopPropagation()}>
-			<MenuItem icon="codicon-screen-cut" label="Cut" shortcut={shortcut('⌘X', 'Ctrl+X')} disabled={!hasSelection} onClick={closeAfter(actions.cut)} />
-			<MenuItem icon="codicon-copy" label="Copy" shortcut={shortcut('⌘C', 'Ctrl+C')} disabled={!hasSelection} onClick={closeAfter(actions.copy)} />
-			<MenuItem icon="codicon-clippy" label="Paste" shortcut={shortcut('⌘V', 'Ctrl+V')} disabled={!state.hasClipboardEntry} onClick={closeAfter(() => actions.paste(targetDirectoryUri))} />
-			<MenuItem icon="codicon-new-file" label="New File" disabled={!!state.contextMenu.entry && state.contextMenu.entry.type !== 'directory'} onClick={closeAfter(() => actions.createFile(targetDirectoryUri))} />
-			<MenuItem icon="codicon-new-folder" label="New Folder" disabled={!!state.contextMenu.entry && state.contextMenu.entry.type !== 'directory'} onClick={closeAfter(() => actions.createDirectory(targetDirectoryUri))} />
+			<MenuItem label="Cut" shortcut={shortcut('⌘X', 'Ctrl+X')} disabled={!hasSelection} onClick={closeAfter(actions.cut)} />
+			<MenuItem label="Copy" shortcut={shortcut('⌘C', 'Ctrl+C')} disabled={!hasSelection} onClick={closeAfter(actions.copy)} />
+			<MenuItem label="Paste" shortcut={shortcut('⌘V', 'Ctrl+V')} disabled={!state.hasClipboardEntry} onClick={closeAfter(() => actions.paste(targetDirectoryUri))} />
+			<MenuItem label="New File" disabled={!!state.contextMenu.entry && state.contextMenu.entry.type !== 'directory'} onClick={closeAfter(() => actions.createFile(targetDirectoryUri))} />
+			<MenuItem label="New Folder" disabled={!!state.contextMenu.entry && state.contextMenu.entry.type !== 'directory'} onClick={closeAfter(() => actions.createDirectory(targetDirectoryUri))} />
 			<Separator />
-			<MenuItem icon="codicon-copy" label="Copy Path" shortcut={shortcut('⌥⌘C', 'Shift+Alt+C')} disabled={!hasSelection} onClick={closeAfter(actions.copyPath)} />
-			<MenuItem icon="codicon-rename" label="Rename" shortcut="F2" disabled={!contextMenu.directoryUri && selection.length !== 1} onClick={closeAfter(actions.renameSelected)} />
-			{canOpenFolder && <>
-					<MenuItem icon="codicon-folder-opened" label="Open in Current Window" onClick={closeAfter(() => actions.openFolder('openInCurrentWindow'))} />
-					<MenuItem icon="codicon-open-in-window" label="Open in New Window" onClick={closeAfter(() => actions.openFolder('openInNewWindow'))} />
-				<MenuItem icon="codicon-file-symlink-directory" label="Open in New Tab" onClick={closeAfter(() => actions.openFolder('openInNewTab'))} />
-			</>}
-			{canOpenTerminal && <MenuItem icon="codicon-terminal" label="Open in Terminal" onClick={closeAfter(() => actions.openFolder('openInTerminal'))} />}
+			<MenuItem label="Copy Path" shortcut={shortcut('⌥⌘C', 'Shift+Alt+C')} disabled={!hasSelection} onClick={closeAfter(actions.copyPath)} />
+			<MenuItem label="Rename" shortcut="F2" disabled={!contextMenu.directoryUri && selection.length !== 1} onClick={closeAfter(actions.renameSelected)} />
+			{(canOpenFolder || canOpenTerminal) && <OpenInMenu
+				canOpenFolder={canOpenFolder}
+				canOpenTerminal={canOpenTerminal}
+				onOpen={type => closeAfter(() => actions.openFolder(type))()}
+			/>}
 			{hasSelection && <Separator />}
-			{hasSelection && !canExtract && <MenuItem icon="codicon-file-zip" label="Compress to ZIP" onClick={closeAfter(() => actions.startArchive('compress'))} />}
-			{canExtract && <MenuItem icon="codicon-file-zip" label="Extract ZIP" onClick={closeAfter(() => actions.startArchive('extract'))} />}
-			<MenuItem icon="codicon-trash" label="Delete" shortcut={shortcut('⌘⌫', 'Delete')} disabled={!hasSelection} onClick={event => { actions.delete(event.shiftKey); actions.closeContextMenu(); }} />
+			{hasSelection && !canExtract && <MenuItem label="Compress to ZIP" onClick={closeAfter(() => actions.startArchive('compress'))} />}
+			{canExtract && <MenuItem label="Extract ZIP" onClick={closeAfter(() => actions.startArchive('extract'))} />}
+			<MenuItem label="Delete" shortcut={shortcut('⌘⌫', 'Delete')} disabled={!hasSelection} onClick={event => { actions.delete(event.shiftKey); actions.closeContextMenu(); }} />
+		</div>
+	);
+}
+
+type OpenAction = 'openInCurrentWindow' | 'openInNewTab' | 'openInNewWindow' | 'openInTerminal';
+const submenuViewportPadding = 8;
+
+function OpenInMenu({ canOpenFolder, canOpenTerminal, onOpen }: { canOpenFolder: boolean; canOpenTerminal: boolean; onOpen: (type: OpenAction) => void }) {
+	const containerRef = useRef<HTMLDivElement>(null);
+	const submenuRef = useRef<HTMLDivElement>(null);
+	const [isOpen, setIsOpen] = useState(false);
+	const [submenuPosition, setSubmenuPosition] = useState<CSSProperties>({ visibility: 'hidden' });
+
+	function openMenu() {
+		setIsOpen(true);
+	}
+
+	useLayoutEffect(() => {
+		if (!isOpen) return;
+		const updatePosition = () => {
+			const container = containerRef.current;
+			const submenu = submenuRef.current;
+			if (!container || !submenu) return;
+			const triggerRect = container.getBoundingClientRect();
+			const submenuWidth = submenu.offsetWidth;
+			const submenuHeight = submenu.offsetHeight;
+			const rightPosition = triggerRect.right - 1;
+			const leftPosition = triggerRect.left - submenuWidth + 1;
+			const openRight = rightPosition + submenuWidth <= window.innerWidth - submenuViewportPadding;
+			setSubmenuPosition({
+				left: Math.max(submenuViewportPadding, Math.min(openRight ? rightPosition : leftPosition, window.innerWidth - submenuWidth - submenuViewportPadding)),
+				top: Math.max(submenuViewportPadding, Math.min(triggerRect.top - 4, window.innerHeight - submenuHeight - submenuViewportPadding)),
+				visibility: 'visible'
+			});
+		};
+
+		updatePosition();
+		window.addEventListener('resize', updatePosition);
+		return () => window.removeEventListener('resize', updatePosition);
+	}, [isOpen]);
+
+	function handleBlur(event: FocusEvent<HTMLDivElement>) {
+		if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false);
+	}
+
+	return (
+		<div ref={containerRef} className="relative" onMouseEnter={openMenu} onMouseLeave={() => setIsOpen(false)} onFocus={openMenu} onBlur={handleBlur}>
+			<MenuItem label="Open in..." submenu aria-haspopup="menu" aria-expanded={isOpen} />
+			{isOpen && <div ref={submenuRef} className="fixed z-30 min-w-48 rounded border border-menu-border bg-menu p-1 shadow-menu" role="menu" style={submenuPosition}>
+				{canOpenFolder && <>
+					<MenuItem label="Current Window" onClick={() => onOpen('openInCurrentWindow')} />
+					<MenuItem label="New Window" onClick={() => onOpen('openInNewWindow')} />
+					<MenuItem label="New Tab" onClick={() => onOpen('openInNewTab')} />
+				</>}
+				{canOpenTerminal && <MenuItem label="Terminal" onClick={() => onOpen('openInTerminal')} />}
+			</div>}
 		</div>
 	);
 }
@@ -45,12 +100,12 @@ function shortcut(mac: string, other: string) {
 	return isMac() ? mac : other;
 }
 
-function MenuItem({ icon, label, shortcut, ...props }: { icon: string; label: string; shortcut?: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+function MenuItem({ label, shortcut, submenu, ...props }: { label: string; shortcut?: string; submenu?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
 	return (
-		<button className="flex h-7 w-full cursor-pointer items-center gap-2.25 rounded-sm border-0 bg-transparent px-2.25 text-left text-menu-foreground hover:not-disabled:bg-menu-selection hover:not-disabled:text-menu-selection-foreground focus:not-disabled:bg-menu-selection focus:not-disabled:text-menu-selection-foreground focus:outline-none disabled:cursor-default disabled:opacity-45" type="button" role="menuitem" {...props}>
-			<i className={`codicon ${icon} w-4 shrink-0`} />
+		<button className="flex h-7 w-full cursor-pointer items-center rounded-sm border-0 bg-transparent px-2.25 text-left text-menu-foreground hover:not-disabled:bg-menu-selection hover:not-disabled:text-menu-selection-foreground focus:not-disabled:bg-menu-selection focus:not-disabled:text-menu-selection-foreground focus:outline-none disabled:cursor-default disabled:opacity-45" type="button" role="menuitem" {...props}>
 			<span>{label}</span>
 			{shortcut && <span className="ml-auto pl-4.5 text-xs opacity-70">{shortcut}</span>}
+			{submenu && <i className="codicon codicon-chevron-right ml-auto w-4 shrink-0" />}
 		</button>
 	);
 }
