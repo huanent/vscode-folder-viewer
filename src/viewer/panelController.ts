@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
-import { ArchiveOperation, compressEntries, extractArchive, OperationCancelledError } from '../archive';
+import { ArchiveOperation, compressEntries, extractArchive, OperationCancelledError, readArchiveTree } from '../archive';
 import { calculateDirectorySize, readDirectory } from '../filesystem/directoryService';
 import { getDisplayName } from '../filesystem/entry';
 import { createDirectory, createFile, deleteEntries, pasteEntries, PasteCancelledError, renameEntry } from '../filesystem/operations';
@@ -180,6 +180,12 @@ export class ViewerPanelController implements vscode.Disposable {
 			case 'openInTerminal':
 				await this.openInTerminal(message.uri);
 				return;
+			case 'previewArchive': {
+				const archiveUri = getSafeUri(rootUri, message.uri);
+				const entries = await readArchiveTree(archiveUri);
+				await this.panel.webview.postMessage({ type: 'archivePreview', uri: archiveUri.toString(), name: getDisplayName(archiveUri), entries });
+				return;
+			}
 			case 'compress':
 				await this.compress(message.operationId, message.uris, message.destinationUri);
 				return;

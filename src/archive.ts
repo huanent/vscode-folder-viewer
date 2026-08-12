@@ -13,9 +13,73 @@ export interface ArchiveOperation {
 	cancelled: boolean;
 }
 
+export interface ArchiveTreeEntry {
+	name: string;
+	type: 'file' | 'directory';
+	size: number;
+	children?: ArchiveTreeEntry[];
+}
+
 export class OperationCancelledError extends Error {
 	constructor() {
 		super('Operation cancelled.');
+	}
+}
+
+export async function readArchiveTree(archiveUri: vscode.Uri): Promise<ArchiveTreeEntry[]> {
+	if (!getDisplayName(archiveUri).toLowerCase().endsWith('.zip')) {
+		throw new Error('Only ZIP archives can be previewed.');
+	}
+	assertFileUris([archiveUri]);
+	const archiveStat = await vscode.workspace.fs.stat(archiveUri);
+	if (!(archiveStat.type & vscode.FileType.File)) {
+		throw new Error('Only ZIP files can be previewed.');
+	}
+
+	const root: ArchiveTreeEntry = { name: '', type: 'directory', size: 0, children: [] };
+	const directories = new Map<string, ArchiveTreeEntry>([['', root]]);
+	const zip = await yauzl.openPromise(archiveUri.fsPath, { validateEntrySizes: true });
+	try {
+		for await (const entry of zip.eachEntry()) {
+			const parts = getSafeArchivePathParts(entry.fileName);
+			if (parts.length === 0) continue;
+			let parent = root;
+			for (let index = 0; index < parts.length - 1; index += 1) {
+				const directoryPath = parts.slice(0, index + 1).join('/');
+				let directory = directories.get(directoryPath);
+				if (!directory) {
+					directory = { name: parts[index], type: 'directory', size: 0, children: [] };
+					parent.children?.push(directory);
+					directories.set(directoryPath, directory);
+				}
+				parent = directory;
+			}
+
+			const entryPath = parts.join('/');
+			if (entry.fileName.endsWith('/')) {
+				if (!directories.has(entryPath)) {
+					const directory = { name: parts.at(-1)!, type: 'directory' as const, size: 0, children: [] };
+					parent.children?.push(directory);
+					directories.set(entryPath, directory);
+				}
+			} else {
+				parent.children?.push({ name: parts.at(-1)!, type: 'file', size: entry.uncompressedSize });
+			}
+		}
+	} finally {
+		zip.close();
+	}
+
+	sortArchiveTree(root.children ?? []);
+	return root.children ?? [];
+}
+
+function sortArchiveTree(entries: ArchiveTreeEntry[]): void {
+	entries.sort((left, right) => left.type === right.type
+		? left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' })
+		: left.type === 'directory' ? -1 : 1);
+	for (const entry of entries) {
+		if (entry.children) sortArchiveTree(entry.children);
 	}
 }
 

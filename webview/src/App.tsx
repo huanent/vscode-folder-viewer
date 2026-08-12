@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ArchiveProgress } from './components/ArchiveProgress';
+import { ArchivePreview } from './components/ArchivePreview';
 import { ContextMenu } from './components/ContextMenu';
 import { FileList } from './components/FileList';
 import { Toolbar } from './components/Toolbar';
@@ -18,6 +19,7 @@ export function App({ rootElement }: AppProps) {
 			<FileList {...model} />
 			<ContextMenu {...model} />
 			<ArchiveProgress {...model} />
+			<ArchivePreview {...model} />
 		</div>
 	);
 }

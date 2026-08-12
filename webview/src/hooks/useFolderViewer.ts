@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import type { ExtensionMessage } from '../../../src/viewer/messages';
+import type { ArchiveTreeEntry, ExtensionMessage } from '../../../src/viewer/messages';
 import type { ArchiveOperation, ContextMenuState, FileEntry, PersistedState } from '../types';
 import { vscode } from '../services/vscode';
 import { useSelection } from './useSelection';
@@ -36,6 +36,7 @@ export function useFolderViewer(rootElement: HTMLElement) {
 	const [cutUris, setCutUris] = useState<Set<string>>(new Set());
 	const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 	const [archiveOperation, setArchiveOperation] = useState<ArchiveOperation | null>(null);
+	const [archivePreview, setArchivePreview] = useState<{ uri: string; name: string; entries: ArchiveTreeEntry[]; loading: boolean } | null>(null);
 	const pendingSelectionUrisRef = useRef<string[] | null>(null);
 	const pendingScrollUriRef = useRef<string | null>(null);
 	const pendingPathNavigationRef = useRef(false);
@@ -157,6 +158,13 @@ export function useFolderViewer(rootElement: HTMLElement) {
 		vscode.postMessage({ type, uri: contextMenu?.directoryUri ?? (entry?.type === 'directory' ? entry.uri : currentUri) });
 	}
 
+	function previewArchive() {
+		const entry = contextMenu?.entry;
+		if (!entry || entry.type !== 'file' || !entry.name.toLowerCase().endsWith('.zip')) return;
+		setArchivePreview({ uri: entry.uri, name: entry.name, entries: [], loading: true });
+		vscode.postMessage({ type: 'previewArchive', uri: entry.uri });
+	}
+
 	function startArchive(kind: 'compress' | 'extract', targets = contextMenu?.directoryUri
 		? [{ name: '', uri: contextMenu.directoryUri, type: 'directory' as const, size: 0, created: 0, modified: 0 }]
 		: selection.selectedEntries) {
@@ -203,6 +211,8 @@ export function useFolderViewer(rootElement: HTMLElement) {
 				setStatus('');
 				if (pathNavigation) setHistory(nextHistory);
 				persist(message.currentUri, nextHistory);
+			} else if (message.type === 'archivePreview') {
+				setArchivePreview({ ...message, loading: false });
 			} else if (message.type === 'archiveProgress') {
 				setArchiveOperation(current => current?.id === message.operationId && !current.cancelling
 					? { ...current, percent: Math.max(0, Math.min(100, message.percent)), detail: message.detail }
@@ -242,6 +252,7 @@ export function useFolderViewer(rootElement: HTMLElement) {
 				if (pendingPathNavigationRef.current) setPathInputOpen(true);
 				pendingPathNavigationRef.current = false;
 				if (message.operationId) setArchiveOperation(current => current?.id === message.operationId ? null : current);
+				setArchivePreview(current => current?.loading ? null : current);
 				setStatus(message.message);
 			}
 	});
@@ -320,14 +331,14 @@ export function useFolderViewer(rootElement: HTMLElement) {
 	}, [entries, selection.selectedUris, hasClipboardEntry, currentUri]);
 
 	return {
-		state: { rootUri, currentUri, history, entries, selectedUris: selection.selectedUris, selectedEntries: selection.selectedEntries, favoriteUris, pathInputOpen, searchOpen, searchQuery, hasClipboardEntry, cutUris, contextMenu, archiveOperation, status },
+		state: { rootUri, currentUri, history, entries, selectedUris: selection.selectedUris, selectedEntries: selection.selectedEntries, favoriteUris, pathInputOpen, searchOpen, searchQuery, hasClipboardEntry, cutUris, contextMenu, archiveOperation, archivePreview, status },
 		actions: {
 			requestDirectory, navigateBack, navigatePath, navigateQuickLocation, openEntry, selectEntry: selection.selectEntry, clearSelection: selection.clearSelection, showContextMenu, showDirectoryContextMenu,
 			closeContextMenu: () => setContextMenu(null), setPathInputOpen, setSearchOpen, setSearchQuery,
 			setFavorite: (uri: string, favorite: boolean) => vscode.postMessage({ type: 'setFavorite', uri, favorite }),
 			cut: () => postForSelection('setClipboard', 'cut'), copy: () => postForSelection('setClipboard', 'copy'),
 			copyPath, delete: (permanent: boolean) => postForSelection('delete', permanent),
-			paste, createDirectory, createFile, renameSelected, openFolder, startArchive, calculateSize, calculateAllFolderSizes,
+			paste, createDirectory, createFile, renameSelected, openFolder, previewArchive, closeArchivePreview: () => setArchivePreview(null), startArchive, calculateSize, calculateAllFolderSizes,
 			cancelArchive: () => setArchiveOperation(current => {
 				if (!current || current.cancelling) return current;
 				vscode.postMessage({ type: 'cancelOperation', operationId: current.id });

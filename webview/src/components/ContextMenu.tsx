@@ -8,6 +8,9 @@ type ContextMenuProps = Pick<FolderViewerModel, 'state' | 'actions'>;
 export function ContextMenu({ state, actions }: ContextMenuProps) {
 	const contextMenu = state.contextMenu;
 	const { menuRef, position } = useContextMenuPosition(contextMenu?.x ?? 0, contextMenu?.y ?? 0);
+	useLayoutEffect(() => {
+		if (contextMenu) menuRef.current?.focus();
+	}, [contextMenu, menuRef]);
 	if (!contextMenu) return null;
 	const selection = state.selectedEntries;
 	const targetDirectoryUri = contextMenu.directoryUri ?? (contextMenu.entry?.type === 'directory' ? contextMenu.entry.uri : state.currentUri);
@@ -15,10 +18,27 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 	const canOpenFolder = Boolean(contextMenu.directoryUri) || !hasSelection || (selection.length === 1 && selection[0].type === 'directory' && selection[0].uri === contextMenu.entry?.uri);
 	const canOpenTerminal = Boolean(contextMenu.directoryUri) || !hasSelection || (selection.length === 1 && selection[0].uri === contextMenu.entry?.uri);
 	const canExtract = !contextMenu.directoryUri && selection.length === 1 && selection[0].type === 'file' && selection[0].name.toLowerCase().endsWith('.zip');
+	const canPreviewArchive = canExtract && selection[0].uri === contextMenu.entry?.uri;
 	const closeAfter = (action: () => void) => () => { action(); actions.closeContextMenu(); };
 
 	return (
-		<div ref={menuRef} className="fixed z-20 min-w-48 rounded border border-menu-border bg-menu p-1 shadow-menu" role="menu" style={position} onClick={event => event.stopPropagation()}>
+		<div
+			ref={menuRef}
+			className="fixed z-20 min-w-48 rounded border border-menu-border bg-menu p-1 shadow-menu"
+			role="menu"
+			tabIndex={-1}
+			style={position}
+			onClick={event => event.stopPropagation()}
+			onKeyDown={event => {
+				if (event.key !== 'Escape') return;
+				event.preventDefault();
+				event.stopPropagation();
+				actions.closeContextMenu();
+			}}
+			onBlur={event => {
+				if (!event.currentTarget.contains(event.relatedTarget)) actions.closeContextMenu();
+			}}
+		>
 			<MenuItem label="Cut" shortcut={shortcut('⌘X', 'Ctrl+X')} disabled={!hasSelection} onClick={closeAfter(actions.cut)} />
 			<MenuItem label="Copy" shortcut={shortcut('⌘C', 'Ctrl+C')} disabled={!hasSelection} onClick={closeAfter(actions.copy)} />
 			<MenuItem label="Paste" shortcut={shortcut('⌘V', 'Ctrl+V')} disabled={!state.hasClipboardEntry} onClick={closeAfter(() => actions.paste(targetDirectoryUri))} />
@@ -27,10 +47,11 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 			<Separator />
 			<MenuItem label="Copy Path" shortcut={shortcut('⌥⌘C', 'Shift+Alt+C')} disabled={!hasSelection} onClick={closeAfter(actions.copyPath)} />
 			<MenuItem label="Rename" shortcut="F2" disabled={!contextMenu.directoryUri && selection.length !== 1} onClick={closeAfter(actions.renameSelected)} />
-			{(canOpenFolder || canOpenTerminal) && <OpenInMenu
+			{(canOpenFolder || canOpenTerminal || canPreviewArchive) && <OpenInMenu
 				canOpenFolder={canOpenFolder}
 				canOpenTerminal={canOpenTerminal}
-				onOpen={type => closeAfter(() => actions.openFolder(type))()}
+				canPreviewArchive={canPreviewArchive}
+				onOpen={type => closeAfter(() => type === 'previewArchive' ? actions.previewArchive() : actions.openFolder(type))()}
 			/>}
 			{hasSelection && <Separator />}
 			{hasSelection && !canExtract && <MenuItem label="Compress to ZIP" onClick={closeAfter(() => actions.startArchive('compress'))} />}
@@ -40,10 +61,10 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 	);
 }
 
-type OpenAction = 'openInCurrentWindow' | 'openInNewTab' | 'openInNewWindow' | 'openInTerminal';
+type OpenAction = 'openInCurrentWindow' | 'openInNewTab' | 'openInNewWindow' | 'openInTerminal' | 'previewArchive';
 const submenuViewportPadding = 8;
 
-function OpenInMenu({ canOpenFolder, canOpenTerminal, onOpen }: { canOpenFolder: boolean; canOpenTerminal: boolean; onOpen: (type: OpenAction) => void }) {
+function OpenInMenu({ canOpenFolder, canOpenTerminal, canPreviewArchive, onOpen }: { canOpenFolder: boolean; canOpenTerminal: boolean; canPreviewArchive: boolean; onOpen: (type: OpenAction) => void }) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const submenuRef = useRef<HTMLDivElement>(null);
 	const [isOpen, setIsOpen] = useState(false);
@@ -85,6 +106,7 @@ function OpenInMenu({ canOpenFolder, canOpenTerminal, onOpen }: { canOpenFolder:
 		<div ref={containerRef} className="relative" onMouseEnter={openMenu} onMouseLeave={() => setIsOpen(false)} onFocus={openMenu} onBlur={handleBlur}>
 			<MenuItem label="Open in..." submenu aria-haspopup="menu" aria-expanded={isOpen} />
 			{isOpen && <div ref={submenuRef} className="fixed z-30 min-w-48 rounded border border-menu-border bg-menu p-1 shadow-menu" role="menu" style={submenuPosition}>
+				{canPreviewArchive && <MenuItem label="Preview" onClick={() => onOpen('previewArchive')} />}
 				{canOpenFolder && <>
 					<MenuItem label="Current Window" onClick={() => onOpen('openInCurrentWindow')} />
 					<MenuItem label="New Window" onClick={() => onOpen('openInNewWindow')} />
