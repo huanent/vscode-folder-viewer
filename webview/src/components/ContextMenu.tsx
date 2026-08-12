@@ -105,7 +105,7 @@ function MenuItem({ label, shortcut, submenu, ...props }: { label: string; short
 		<button className="flex h-7 w-full cursor-pointer items-center rounded-sm border-0 bg-transparent px-2.25 text-left text-menu-foreground hover:not-disabled:bg-menu-selection hover:not-disabled:text-menu-selection-foreground focus:not-disabled:bg-menu-selection focus:not-disabled:text-menu-selection-foreground focus:outline-none disabled:cursor-default disabled:opacity-45" type="button" role="menuitem" {...props}>
 			<span>{label}</span>
 			{shortcut && <span className="ml-auto pl-4.5 text-xs opacity-70">{shortcut}</span>}
-			{submenu && <i className="codicon codicon-chevron-right ml-auto w-4 shrink-0" />}
+			{submenu && <i className="codicon codicon-chevron-right ml-auto w-4 shrink-0" aria-hidden="true" />}
 		</button>
 	);
 }

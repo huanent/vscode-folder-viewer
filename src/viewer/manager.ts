@@ -76,34 +76,7 @@ export class ViewerManager implements vscode.Disposable {
 			? [...new Set([...favorites, target])]
 			: favorites.filter(uri => uri !== target);
 		await this.favoritesStore.setFavorites(updatedFavorites);
-		if (!favorite) {
-			const names = this.getFavoriteNames();
-			delete names[target];
-			await this.favoritesStore.setNames(names);
-		}
 		await this.broadcastFavorites(updatedFavorites);
-	}
-
-	async renameFavorite(targetUri: vscode.Uri): Promise<void> {
-		const target = targetUri.toString();
-		if (!this.getFavorites().includes(target)) {
-			return;
-		}
-		const names = this.getFavoriteNames();
-		const currentName = names[target] ?? targetUri.fsPath;
-		const newName = await vscode.window.showInputBox({
-			title: 'Rename Favorite',
-			prompt: 'Enter a display name',
-			value: currentName,
-			valueSelection: [0, currentName.length],
-			validateInput: value => value.trim() ? undefined : 'The name cannot be empty.'
-		});
-		if (newName === undefined || newName.trim() === currentName) {
-			return;
-		}
-		names[target] = newName.trim();
-		await this.favoritesStore.setNames(names);
-		await this.broadcastFavorites(this.getFavorites());
 	}
 
 	revealFolderViewer(): boolean {
@@ -203,26 +176,19 @@ export class ViewerManager implements vscode.Disposable {
 	async sendFavorites(webview: vscode.Webview, rootUri: vscode.Uri): Promise<void> {
 		await webview.postMessage({
 			type: 'favoritesChanged',
-			favorites: this.getFavoriteEntries(rootUri, this.getFavorites())
+			favorites: this.getFavoritesWithinRoot(rootUri, this.getFavorites())
 		});
 	}
 
 	private async broadcastFavorites(favorites: string[]): Promise<void> {
 		await Promise.all([...this.panels].map(([panel, { rootUri }]) => panel.webview.postMessage({
 			type: 'favoritesChanged',
-			favorites: this.getFavoriteEntries(rootUri, favorites)
+			favorites: this.getFavoritesWithinRoot(rootUri, favorites)
 		})));
 	}
 
-	private getFavoriteNames(): Record<string, string> {
-		return this.favoritesStore.getNames();
-	}
-
-	private getFavoriteEntries(rootUri: vscode.Uri, favorites: string[]) {
-		const names = this.getFavoriteNames();
-		return favorites
-			.filter(value => isUriWithinRoot(rootUri, value))
-			.map(uri => ({ uri, name: names[uri] }));
+	private getFavoritesWithinRoot(rootUri: vscode.Uri, favorites: string[]) {
+		return favorites.filter(value => isUriWithinRoot(rootUri, value));
 	}
 }
 

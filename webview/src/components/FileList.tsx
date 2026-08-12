@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react';
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import type { FolderViewerModel } from '../hooks/useFolderViewer';
 import { formatDate, formatSize, getFileIcon } from '../lib/formatters';
 import type { FileEntry } from '../types';
@@ -152,6 +153,9 @@ function EntrySize({ entry, selected, onCalculate }: { entry: FileEntry; selecte
 	if (entry.calculatedSize !== undefined) {
 		return <span className={`entry-size overflow-hidden text-right text-xs text-ellipsis whitespace-nowrap ${selected ? 'text-inherit' : 'text-muted'}`}>{formatSize(entry.calculatedSize)}</span>;
 	}
+	if (entry.calculationError) {
+		return <FolderSizeError message={entry.calculationError} selected={selected} onCalculate={onCalculate} />;
+	}
 	const label = entry.calculating ? 'Calculating folder size' : 'Calculate folder size (Command/Ctrl+click calculates all folders)';
 	return (
 		<span className={`entry-size flex justify-end ${selected ? 'text-inherit' : 'text-muted'}`}>
@@ -166,6 +170,53 @@ function EntrySize({ entry, selected, onCalculate }: { entry: FileEntry; selecte
 			>
 				<i className={`codicon ${entry.calculating ? 'codicon-loading codicon-modifier-spin' : 'codicon-refresh'}`} />
 			</button>
+		</span>
+	);
+}
+
+function FolderSizeError({ message, selected, onCalculate }: { message: string; selected: boolean; onCalculate: (event: MouseEvent) => void }) {
+	const buttonRef = useRef<HTMLButtonElement>(null);
+	const [tooltipStyle, setTooltipStyle] = useState<CSSProperties | null>(null);
+
+	function showTooltip() {
+		const rect = buttonRef.current?.getBoundingClientRect();
+		if (!rect) return;
+		const horizontal = { right: Math.max(8, window.innerWidth - rect.right) };
+		setTooltipStyle(rect.top > 72
+			? { ...horizontal, bottom: window.innerHeight - rect.top + 4, maxWidth: Math.max(0, Math.min(320, window.innerWidth - 16)), overflowWrap: 'anywhere' }
+			: { ...horizontal, top: rect.bottom + 4, maxWidth: Math.max(0, Math.min(320, window.innerWidth - 16)), overflowWrap: 'anywhere' });
+	}
+
+	useLayoutEffect(() => {
+		const frame = requestAnimationFrame(() => {
+			const button = buttonRef.current;
+			if (button?.matches(':hover') || document.activeElement === button) showTooltip();
+		});
+		return () => cancelAnimationFrame(frame);
+	}, [message]);
+
+	return (
+		<span className={`entry-size flex justify-end ${selected ? 'text-inherit' : 'text-(--vscode-list-warningForeground)'}`}>
+			<button
+				ref={buttonRef}
+				type="button"
+				aria-label={`Folder size calculation failed: ${message}`}
+				className="grid size-5 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-inherit hover:bg-toolbar-hover focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-focus"
+				onMouseEnter={showTooltip}
+				onMouseLeave={() => setTooltipStyle(null)}
+				onFocus={showTooltip}
+				onBlur={() => setTooltipStyle(null)}
+				onClick={event => { event.stopPropagation(); onCalculate(event); }}
+				onDoubleClick={event => event.stopPropagation()}
+			>
+				<i className="codicon codicon-warning" />
+			</button>
+			{tooltipStyle && createPortal(
+				<span className="pointer-events-none fixed z-40 block rounded border border-widget-border bg-notification px-2 py-1.5 text-left text-xs text-foreground shadow-widget whitespace-pre-wrap" role="tooltip" style={tooltipStyle}>
+					{message}
+				</span>,
+				document.body
+			)}
 		</span>
 	);
 }

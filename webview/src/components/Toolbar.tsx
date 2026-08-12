@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { FolderViewerModel } from '../hooks/useFolderViewer';
+import { FavoritesPanel } from './FavoritesPanel';
 import { IconButton } from './IconButton';
+import { ViewerMenu } from './ViewerMenu';
 
 type ToolbarProps = Pick<FolderViewerModel, 'state' | 'actions'>;
 
@@ -40,7 +42,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 				<IconButton icon="codicon-arrow-left" title="Back" aria-label="Back" disabled={!state.history.length} onClick={actions.navigateBack} />
 				<IconButton icon="codicon-refresh" title="Refresh" aria-label="Refresh" onClick={() => actions.requestDirectory(state.currentUri, false)} />
 			</div>
-			<div className="grid h-7.5 min-w-0 grid-cols-[minmax(0,1fr)_28px] items-center overflow-hidden rounded border border-input-border bg-input">
+			<div className="relative grid h-7.5 min-w-0 grid-cols-[minmax(0,1fr)_28px] items-center rounded border border-input-border bg-input">
 				{state.searchOpen ? (
 					<div className="flex h-full min-w-0 items-center gap-1 pl-1.5">
 						<i className="codicon codicon-search shrink-0 text-muted" aria-hidden="true" />
@@ -93,7 +95,6 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 						if (event.button !== 0) return;
 						event.stopPropagation();
 						actions.closeContextMenu();
-						actions.setFavoritesOpen(false);
 						actions.setPathInputOpen(true);
 					}}
 				>
@@ -137,17 +138,9 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 						onClick={() => actions.setFavorite(state.currentUri, !favorite)}
 					/>
 				)}
+				{state.pathInputOpen && <FavoritesPanel {...{ state, actions }} />}
 			</div>
-			<IconButton
-				icon="codicon-bookmark"
-				title="Favorites"
-				aria-label="Favorites"
-				aria-expanded={state.favoritesOpen}
-				onClick={event => {
-					event.stopPropagation();
-					actions.setFavoritesOpen(!state.favoritesOpen);
-				}}
-			/>
+			<ViewerMenu {...{ state, actions }} />
 		</header>
 	);
 }

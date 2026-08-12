@@ -7,11 +7,7 @@ export interface FileEntry {
 	modified: number;
 	calculatedSize?: number;
 	calculating?: boolean;
-}
-
-export interface FavoriteEntry {
-	uri: string;
-	name?: string;
+	calculationError?: string;
 }
 
 export interface PersistedState {

@@ -16,7 +16,6 @@ export type WebviewMessage =
 	| { type: 'rename'; uri: string }
 	| { type: 'copyPath'; uris: string[] }
 	| { type: 'setFavorite'; uri: string; favorite: boolean }
-	| { type: 'renameFavorite'; uri: string }
 	| { type: 'openInCurrentWindow'; uri: string }
 	| { type: 'openInNewTab'; uri: string }
 	| { type: 'openInNewWindow'; uri: string }
@@ -25,11 +24,6 @@ export type WebviewMessage =
 	| { type: 'extract'; operationId: string; uri: string }
 	| { type: 'cancelOperation'; operationId: string }
 	| { type: 'delete'; uris: string[]; permanent: boolean };
-
-export interface FavoriteEntry {
-	uri: string;
-	name?: string;
-}
 
 export type ExtensionMessage =
 	| { type: 'directory'; rootUri: string; currentUri: string; entries: FileEntry[] }
@@ -40,7 +34,7 @@ export type ExtensionMessage =
 	| { type: 'pasted'; operationId: string; uris: string[]; destinationUri: string }
 	| { type: 'compressed' | 'extracted' | 'archiveCancelled' | 'archiveDismissed' | 'pasteCancelled'; operationId: string }
 	| { type: 'clipboardChanged'; hasEntry: boolean; operation: 'cut' | 'copy'; uris: string[] }
-	| { type: 'favoritesChanged'; favorites: FavoriteEntry[] }
+	| { type: 'favoritesChanged'; favorites: string[] }
 	| { type: 'directorySize'; uri: string; size: number }
 	| { type: 'directorySizeError'; uri: string; message: string }
 	| { type: 'error'; message: string; operationId?: string };
