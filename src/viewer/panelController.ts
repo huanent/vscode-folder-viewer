@@ -33,7 +33,7 @@ export class ViewerPanelController implements vscode.Disposable {
 				vscode.Uri.joinPath(context.extensionUri, 'media')
 			]
 		};
-		panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'resources', 'logo.svg');
+		panel.iconPath = new vscode.ThemeIcon('folder');
 		this.disposables.push(panel.webview.onDidReceiveMessage(message => this.handleMessage(message)));
 		this.disposables.push(panel.onDidChangeViewState(event => {
 			if (!event.webviewPanel.active) {
