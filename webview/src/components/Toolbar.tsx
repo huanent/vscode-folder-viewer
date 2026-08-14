@@ -37,15 +37,15 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 	}, [state.searchOpen]);
 
 	return (
-		<header className="grid h-11.5 grid-cols-[auto_minmax(0,1fr)_28px] items-center gap-1 border-b border-border bg-app max-[600px]:gap-1.5 max-[600px]:px-2">
+		<header className="grid h-11.5 grid-cols-[auto_minmax(0,1fr)_28px] items-center gap-1 border-b border-(--vscode-panel-border) bg-(--vscode-editor-background) max-[600px]:gap-1.5 max-[600px]:px-2">
 			<div className="flex items-center gap-0.5" role="toolbar" aria-label="Navigation">
 				<IconButton icon="codicon-arrow-left" title="Back" aria-label="Back" disabled={!state.history.length} onClick={actions.navigateBack} />
 				<IconButton icon="codicon-refresh" title="Refresh" aria-label="Refresh" onClick={() => actions.requestDirectory(state.currentUri, false)} />
 			</div>
-			<div className="relative grid h-7.5 min-w-0 grid-cols-[minmax(0,1fr)_28px] items-center rounded border border-input-border bg-input">
+			<div className="relative grid h-7.5 min-w-0 grid-cols-[minmax(0,1fr)_28px] items-center rounded border border-(--vscode-input-border,var(--vscode-widget-border,var(--vscode-panel-border))) bg-(--vscode-input-background)">
 				{state.searchOpen ? (
 					<div className="flex h-full min-w-0 items-center gap-1 pl-1.5">
-						<i className="codicon codicon-search shrink-0 text-muted" aria-hidden="true" />
+						<i className="codicon codicon-search shrink-0 text-(--vscode-descriptionForeground)" aria-hidden="true" />
 						<input
 							ref={searchInputRef}
 							value={state.searchQuery}
@@ -63,7 +63,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 									actions.setSearchOpen(false);
 								}
 							}}
-							className="h-full min-w-0 flex-1 border-0 bg-transparent text-foreground outline-none"
+							className="h-full min-w-0 flex-1 border-0 bg-transparent text-(--vscode-foreground) outline-none"
 							aria-label="Search files"
 							placeholder="Search files"
 							spellCheck={false}
@@ -82,7 +82,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 									actions.setPathInputOpen(false);
 								}
 							}}
-							className="h-full w-full border-0 bg-transparent px-1.5 text-foreground outline-none"
+							className="h-full w-full border-0 bg-transparent px-1.5 text-(--vscode-foreground) outline-none"
 							aria-label="Go to path"
 							spellCheck={false}
 						/>
@@ -100,14 +100,14 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 				>
 					{crumbs.map((crumb, index) => (
 						<span className="flex shrink-0 items-center" key={crumb.uri}>
-							{index > 0 && <i className="codicon codicon-chevron-right shrink-0 text-breadcrumb" />}
+							{index > 0 && <i className="codicon codicon-chevron-right shrink-0 text-(--vscode-breadcrumb-foreground)" />}
 							<button
 								type="button"
 								title={crumb.label}
 								aria-label={crumb.label}
 								aria-current={index === crumbs.length - 1 ? 'page' : undefined}
 								disabled={index === crumbs.length - 1}
-								className="flex max-w-55 shrink-0 cursor-pointer items-center overflow-hidden rounded-sm border-0 bg-transparent px-1.25 py-0.5 text-breadcrumb text-ellipsis whitespace-nowrap hover:bg-breadcrumb-hover hover:text-breadcrumb-focus focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-focus disabled:cursor-default disabled:font-semibold disabled:text-breadcrumb-active"
+								className="flex max-w-55 shrink-0 cursor-pointer items-center overflow-hidden rounded-sm border-0 bg-transparent px-1.25 py-0.5 text-(--vscode-breadcrumb-foreground) text-ellipsis whitespace-nowrap hover:bg-(--vscode-breadcrumbPicker-background) hover:text-(--vscode-breadcrumb-focusForeground) focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-(--vscode-focusBorder) disabled:cursor-default disabled:font-semibold disabled:text-(--vscode-breadcrumb-activeSelectionForeground)"
 								onClick={event => {
 									event.stopPropagation();
 									actions.requestDirectory(crumb.uri, true);

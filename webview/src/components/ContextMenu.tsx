@@ -24,7 +24,7 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 	return (
 		<div
 			ref={menuRef}
-			className="fixed z-20 min-w-48 rounded border border-menu-border bg-menu p-1 shadow-menu"
+			className="fixed z-20 min-w-48 rounded border border-(--vscode-menu-border,var(--vscode-panel-border)) bg-(--vscode-menu-background) p-1 shadow-[0_2px_8px_var(--vscode-widget-shadow)]"
 			role="menu"
 			tabIndex={-1}
 			style={position}
@@ -105,7 +105,7 @@ function OpenInMenu({ canOpenFolder, canOpenTerminal, canPreviewArchive, onOpen 
 	return (
 		<div ref={containerRef} className="relative" onMouseEnter={openMenu} onMouseLeave={() => setIsOpen(false)} onFocus={openMenu} onBlur={handleBlur}>
 			<MenuItem label="Open in..." submenu aria-haspopup="menu" aria-expanded={isOpen} />
-			{isOpen && <div ref={submenuRef} className="fixed z-30 min-w-48 rounded border border-menu-border bg-menu p-1 shadow-menu" role="menu" style={submenuPosition}>
+			{isOpen && <div ref={submenuRef} className="fixed z-30 min-w-48 rounded border border-(--vscode-menu-border,var(--vscode-panel-border)) bg-(--vscode-menu-background) p-1 shadow-[0_2px_8px_var(--vscode-widget-shadow)]" role="menu" style={submenuPosition}>
 				{canPreviewArchive && <MenuItem label="Preview" onClick={() => onOpen('previewArchive')} />}
 				{canOpenFolder && <>
 					<MenuItem label="Current Window" onClick={() => onOpen('openInCurrentWindow')} />
@@ -124,7 +124,7 @@ function shortcut(mac: string, other: string) {
 
 function MenuItem({ label, shortcut, submenu, ...props }: { label: string; shortcut?: string; submenu?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
 	return (
-		<button className="flex h-7 w-full cursor-pointer items-center rounded-sm border-0 bg-transparent px-2.25 text-left text-menu-foreground hover:not-disabled:bg-menu-selection hover:not-disabled:text-menu-selection-foreground focus:not-disabled:bg-menu-selection focus:not-disabled:text-menu-selection-foreground focus:outline-none disabled:cursor-default disabled:opacity-45" type="button" role="menuitem" {...props}>
+		<button className="flex h-7 w-full cursor-pointer items-center rounded-sm border-0 bg-transparent px-2.25 text-left text-(--vscode-menu-foreground) hover:not-disabled:bg-(--vscode-menu-selectionBackground) hover:not-disabled:text-(--vscode-menu-selectionForeground) focus:not-disabled:bg-(--vscode-menu-selectionBackground) focus:not-disabled:text-(--vscode-menu-selectionForeground) focus:outline-none disabled:cursor-default disabled:opacity-45" type="button" role="menuitem" {...props}>
 			<span>{label}</span>
 			{shortcut && <span className="ml-auto pl-4.5 text-xs opacity-70">{shortcut}</span>}
 			{submenu && <i className="codicon codicon-chevron-right ml-auto w-4 shrink-0" aria-hidden="true" />}
@@ -133,5 +133,5 @@ function MenuItem({ label, shortcut, submenu, ...props }: { label: string; short
 }
 
 function Separator(): ReactNode {
-	return <div className="mx-1.75 my-1 h-px bg-menu-separator" role="separator" />;
+	return <div className="mx-1.75 my-1 h-px bg-(--vscode-menu-separatorBackground,var(--vscode-panel-border))" role="separator" />;
 }

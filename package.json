@@ -2,7 +2,7 @@
   "name": "folder-viewer",
   "displayName": "Folder Viewer",
   "description": "Explore a folder in the editor view",
-  "version": "3.5.2",
+  "version": "3.5.3",
   "publisher": "huanent",
   "icon": "resources/logo.png",
   "repository": {
@@ -17,6 +17,9 @@
   "categories": [
     "Visualization",
     "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "extensionKind": [

@@ -38,7 +38,7 @@ export function ViewerMenu({ state, actions }: ViewerMenuProps) {
 				}}
 			/>
 			{open && (
-				<div className="absolute top-[calc(100%+4px)] right-0 z-20 min-w-52 rounded border border-menu-border bg-menu p-1 shadow-menu" role="menu" onClick={event => event.stopPropagation()}>
+				<div className="absolute top-[calc(100%+4px)] right-0 z-20 min-w-52 rounded border border-(--vscode-menu-border,var(--vscode-panel-border)) bg-(--vscode-menu-background) p-1 shadow-[0_2px_8px_var(--vscode-widget-shadow)]" role="menu" onClick={event => event.stopPropagation()}>
 					<MenuItem
 						label="Calculate All Folder Sizes"
 						disabled={!hasPendingFolderSizes}
@@ -55,7 +55,7 @@ export function ViewerMenu({ state, actions }: ViewerMenuProps) {
 
 function MenuItem({ label, ...props }: { label: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
 	return (
-		<button className="flex h-7 w-full cursor-pointer items-center rounded-sm border-0 bg-transparent px-2.25 text-left text-menu-foreground hover:not-disabled:bg-menu-selection hover:not-disabled:text-menu-selection-foreground focus:not-disabled:bg-menu-selection focus:not-disabled:text-menu-selection-foreground focus:outline-none disabled:cursor-default disabled:opacity-45" type="button" role="menuitem" {...props}>
+		<button className="flex h-7 w-full cursor-pointer items-center rounded-sm border-0 bg-transparent px-2.25 text-left text-(--vscode-menu-foreground) hover:not-disabled:bg-(--vscode-menu-selectionBackground) hover:not-disabled:text-(--vscode-menu-selectionForeground) focus:not-disabled:bg-(--vscode-menu-selectionBackground) focus:not-disabled:text-(--vscode-menu-selectionForeground) focus:outline-none disabled:cursor-default disabled:opacity-45" type="button" role="menuitem" {...props}>
 			<span>{label}</span>
 		</button>
 	);

@@ -50,7 +50,7 @@ export function FileList({ state, actions }: FileListProps) {
 			}}
 			onContextMenu={event => actions.showContextMenu(event, null)}
 		>
-			<div className={`${fileGridClasses} sticky top-0 z-2 h-8 border-b border-border bg-app text-xs text-muted`}>
+			<div className={`${fileGridClasses} sticky top-0 z-2 h-8 border-b border-(--vscode-panel-border) bg-(--vscode-editor-background) text-xs text-(--vscode-descriptionForeground)`}>
 				<SortHeader label={`Name${state.entries.length ? ` (${entries.length}${normalizedQuery ? ` of ${state.entries.length}` : ''})` : ''}`} sortKey="name" sort={sort} onSort={toggleSort} className="pl-6" />
 				<SortHeader label="Created" sortKey="created" sort={sort} onSort={toggleSort} className="max-[600px]:hidden" />
 				<SortHeader label="Modified" sortKey="modified" sort={sort} onSort={toggleSort} className="max-[600px]:hidden" />
@@ -63,8 +63,8 @@ export function FileList({ state, actions }: FileListProps) {
 				))}
 				{bottomSpacerHeight > 0 && <div style={{ height: bottomSpacerHeight }} />}
 			</div>
-			{entries.length === 0 && !state.status && <div className="py-11 text-center text-muted">{normalizedQuery ? 'No matching files.' : 'This folder is empty.'}</div>}
-			{state.status && <div className="py-11 text-center text-muted" role="status" aria-live="polite">{state.status}</div>}
+			{entries.length === 0 && !state.status && <div className="py-11 text-center text-(--vscode-descriptionForeground)">{normalizedQuery ? 'No matching files.' : 'This folder is empty.'}</div>}
+			{state.status && <div className="py-11 text-center text-(--vscode-descriptionForeground)" role="status" aria-live="polite">{state.status}</div>}
 		</main>
 	);
 }
@@ -89,13 +89,13 @@ function SortButton({ label, active, direction, onClick }: { label: string; acti
 			title={label}
 			aria-label={label}
 			aria-pressed={active}
-			className="inline-grid h-2.5 w-5 cursor-pointer place-items-center border-0 bg-transparent p-0 text-muted hover:text-foreground focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-focus"
+			className="inline-grid h-2.5 w-5 cursor-pointer place-items-center border-0 bg-transparent p-0 text-(--vscode-descriptionForeground) hover:text-(--vscode-foreground) focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-(--vscode-focusBorder)"
 			onClick={event => {
 				onClick();
 				if (event.detail > 0) event.currentTarget.blur();
 			}}
 		>
-			<span className={`size-0 border-x-4 border-x-transparent ${direction === 'ascending' ? 'border-b-[6px] border-b-current' : 'border-t-[6px] border-t-current'} ${active ? 'text-foreground opacity-100' : 'opacity-55'}`} />
+			<span className={`size-0 border-x-4 border-x-transparent ${direction === 'ascending' ? 'border-b-[6px] border-b-current' : 'border-t-[6px] border-t-current'} ${active ? 'text-(--vscode-foreground) opacity-100' : 'opacity-55'}`} />
 		</button>
 	);
 }
@@ -114,8 +114,8 @@ function FileRow({ entry, state, actions }: { entry: FileEntry } & FileListProps
 	const selected = state.selectedUris.has(entry.uri);
 	const cut = state.cutUris.has(entry.uri);
 	const classes = selected
-		? 'bg-selection text-selection-foreground'
-		: 'hover:bg-hover hover:text-hover-foreground';
+		? 'bg-(--vscode-list-activeSelectionBackground) text-(--vscode-list-activeSelectionForeground)'
+		: 'hover:bg-(--vscode-list-hoverBackground) hover:text-(--vscode-list-hoverForeground)';
 
 	return (
 		<div
@@ -136,11 +136,11 @@ function FileRow({ entry, state, actions }: { entry: FileEntry } & FileListProps
 			onContextMenu={event => actions.showContextMenu(event, entry)}
 		>
 			<div className="flex min-w-0 items-center gap-2">
-				<i className={`codicon ${entry.type === 'directory' ? 'codicon-folder text-folder' : `${getFileIcon(entry.name)} text-file`} shrink-0 text-base ${selected ? 'text-inherit!' : ''}`} />
+				<i className={`codicon ${entry.type === 'directory' ? 'codicon-folder text-(--vscode-symbolIcon-folderForeground,var(--vscode-icon-foreground))' : `${getFileIcon(entry.name)} text-(--vscode-symbolIcon-fileForeground,var(--vscode-icon-foreground))`} shrink-0 text-base ${selected ? 'text-inherit!' : ''}`} />
 				<span className="overflow-hidden text-ellipsis whitespace-nowrap">{entry.name}</span>
 			</div>
-			<span className={`entry-created overflow-hidden text-xs text-ellipsis whitespace-nowrap max-[600px]:hidden ${selected ? 'text-inherit' : 'text-muted'}`}>{formatDate(entry.created)}</span>
-			<span className={`entry-modified overflow-hidden text-xs text-ellipsis whitespace-nowrap max-[600px]:hidden ${selected ? 'text-inherit' : 'text-muted'}`}>{formatDate(entry.modified)}</span>
+			<span className={`entry-created overflow-hidden text-xs text-ellipsis whitespace-nowrap max-[600px]:hidden ${selected ? 'text-inherit' : 'text-(--vscode-descriptionForeground)'}`}>{formatDate(entry.created)}</span>
+			<span className={`entry-modified overflow-hidden text-xs text-ellipsis whitespace-nowrap max-[600px]:hidden ${selected ? 'text-inherit' : 'text-(--vscode-descriptionForeground)'}`}>{formatDate(entry.modified)}</span>
 			<EntrySize entry={entry} selected={selected} onCalculate={(event) => actions.calculateSize(entry, event.metaKey || event.ctrlKey)} />
 		</div>
 	);
@@ -148,23 +148,23 @@ function FileRow({ entry, state, actions }: { entry: FileEntry } & FileListProps
 
 function EntrySize({ entry, selected, onCalculate }: { entry: FileEntry; selected: boolean; onCalculate: (event: MouseEvent) => void }) {
 	if (entry.type === 'file') {
-		return <span className={`entry-size overflow-hidden text-right text-xs text-ellipsis whitespace-nowrap ${selected ? 'text-inherit' : 'text-muted'}`}>{formatSize(entry.size)}</span>;
+		return <span className={`entry-size overflow-hidden text-right text-xs text-ellipsis whitespace-nowrap ${selected ? 'text-inherit' : 'text-(--vscode-descriptionForeground)'}`}>{formatSize(entry.size)}</span>;
 	}
 	if (entry.calculatedSize !== undefined) {
-		return <span className={`entry-size overflow-hidden text-right text-xs text-ellipsis whitespace-nowrap ${selected ? 'text-inherit' : 'text-muted'}`}>{formatSize(entry.calculatedSize)}</span>;
+		return <span className={`entry-size overflow-hidden text-right text-xs text-ellipsis whitespace-nowrap ${selected ? 'text-inherit' : 'text-(--vscode-descriptionForeground)'}`}>{formatSize(entry.calculatedSize)}</span>;
 	}
 	if (entry.calculationError) {
 		return <FolderSizeError message={entry.calculationError} selected={selected} onCalculate={onCalculate} />;
 	}
 	const label = entry.calculating ? 'Calculating folder size' : 'Calculate folder size (Command/Ctrl+click calculates all folders)';
 	return (
-		<span className={`entry-size flex justify-end ${selected ? 'text-inherit' : 'text-muted'}`}>
+		<span className={`entry-size flex justify-end ${selected ? 'text-inherit' : 'text-(--vscode-descriptionForeground)'}`}>
 			<button
 				type="button"
 				title={label}
 				aria-label={label}
 				disabled={entry.calculating}
-				className="grid size-5 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-inherit hover:not-disabled:bg-toolbar-hover focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-focus disabled:cursor-default"
+				className="grid size-5 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-inherit hover:not-disabled:bg-(--vscode-toolbar-hoverBackground) focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-(--vscode-focusBorder) disabled:cursor-default"
 				onClick={event => { event.stopPropagation(); onCalculate(event); }}
 				onDoubleClick={event => event.stopPropagation()}
 			>
@@ -201,7 +201,7 @@ function FolderSizeError({ message, selected, onCalculate }: { message: string; 
 				ref={buttonRef}
 				type="button"
 				aria-label={`Folder size calculation failed: ${message}`}
-				className="grid size-5 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-inherit hover:bg-toolbar-hover focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-focus"
+				className="grid size-5 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-inherit hover:bg-(--vscode-toolbar-hoverBackground) focus-visible:outline focus-visible:-outline-offset-1 focus-visible:outline-(--vscode-focusBorder)"
 				onMouseEnter={showTooltip}
 				onMouseLeave={() => setTooltipStyle(null)}
 				onFocus={showTooltip}
@@ -212,7 +212,7 @@ function FolderSizeError({ message, selected, onCalculate }: { message: string; 
 				<i className="codicon codicon-warning" />
 			</button>
 			{tooltipStyle && createPortal(
-				<span className="pointer-events-none fixed z-40 block rounded border border-widget-border bg-notification px-2 py-1.5 text-left text-xs text-foreground shadow-widget whitespace-pre-wrap" role="tooltip" style={tooltipStyle}>
+				<span className="pointer-events-none fixed z-40 block rounded border border-(--vscode-widget-border,var(--vscode-panel-border)) bg-(--vscode-notifications-background) px-2 py-1.5 text-left text-xs text-(--vscode-foreground) shadow-[0_4px_16px_var(--vscode-widget-shadow)] whitespace-pre-wrap" role="tooltip" style={tooltipStyle}>
 					{message}
 				</span>,
 				document.body
