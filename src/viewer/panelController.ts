@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
+import { spawn } from 'child_process';
 import * as os from 'os';
 import * as path from 'path';
 import { ArchiveOperation, compressEntries, extractArchive, OperationCancelledError, readArchiveTree } from '../archive';
-import { calculateDirectorySize, readDirectory } from '../filesystem/directoryService';
+import { calculateDirectorySize, isRunnableApplication, readDirectory } from '../filesystem/directoryService';
 import { getDisplayName } from '../filesystem/entry';
 import { createDirectory, createFile, deleteEntries, pasteEntries, PasteCancelledError, renameEntry } from '../filesystem/operations';
 import { getWebviewHtml } from '../webview';
@@ -126,6 +127,9 @@ export class ViewerPanelController implements vscode.Disposable {
 				return;
 			case 'openFile':
 				await vscode.commands.executeCommand('vscode.open', getSafeUri(rootUri, message.uri));
+				return;
+			case 'runApplication':
+				await this.runApplication(message.uri);
 				return;
 			case 'calculateDirectorySize':
 				await this.calculateDirectorySize(message.uri);
@@ -324,6 +328,22 @@ export class ViewerPanelController implements vscode.Disposable {
 		const stat = await vscode.workspace.fs.stat(targetUri);
 		const directoryUri = stat.type & vscode.FileType.Directory ? targetUri : vscode.Uri.joinPath(targetUri, '..');
 		vscode.window.createTerminal({ cwd: directoryUri, name: getDisplayName(directoryUri) }).show();
+	}
+
+	private async runApplication(uriValue: string): Promise<void> {
+		const applicationUri = getSafeUri(this.document.rootUri, uriValue);
+		const stat = await vscode.workspace.fs.stat(applicationUri);
+		if (!await isRunnableApplication(applicationUri, stat.type)) {
+			throw new Error('The selected item is not a runnable application.');
+		}
+		if (process.platform === 'win32') {
+			spawn(applicationUri.fsPath, [], { cwd: path.dirname(applicationUri.fsPath), detached: true, stdio: 'ignore' }).unref();
+			return;
+		}
+		if (process.platform === 'darwin') {
+			spawn('open', [applicationUri.fsPath], { detached: true, stdio: 'ignore' }).unref();
+			return;
+		}
 	}
 
 	private async compress(operationId: string, uriValues: string[], destinationValue: string): Promise<void> {

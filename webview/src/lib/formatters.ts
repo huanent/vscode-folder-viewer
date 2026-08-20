@@ -1,3 +1,5 @@
+import type { FileEntry } from '../types';
+
 const imageExtensions = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico']);
 const archiveExtensions = new Set(['zip', 'tar', 'gz', '7z', 'rar']);
 const markdownExtensions = new Set(['md', 'mdx']);
@@ -36,6 +38,10 @@ export function getRelativePath(rootUri: string, uri: string): string {
 
 export function isMac(): boolean {
 	return navigator.platform.toLowerCase().includes('mac');
+}
+
+export function isRunnableApplication(entry: FileEntry): boolean {
+	return entry.runnable === true;
 }
 
 export function getFileManagerName(): string {

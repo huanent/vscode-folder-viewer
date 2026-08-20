@@ -7,6 +7,7 @@ export type OutboundMessage =
 	| { type: 'readDirectory'; uri: string }
 	| { type: 'navigateQuickLocation'; location: 'desktop' | 'downloads' | 'documents' | 'tmp' }
 	| { type: 'openFile'; uri: string }
+	| { type: 'runApplication'; uri: string }
 	| { type: 'calculateDirectorySize'; uri: string }
 	| { type: 'setClipboard'; uris: string[]; operation: 'cut' | 'copy' }
 	| { type: 'paste'; operationId: string; destinationUri: string }

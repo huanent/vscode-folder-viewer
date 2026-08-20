@@ -2,7 +2,7 @@ import type { MouseEvent } from 'react';
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { FolderViewerModel } from '../hooks/useFolderViewer';
-import { formatDate, formatSize, getFileIcon } from '../lib/formatters';
+import { formatDate, formatSize, getFileIcon, isRunnableApplication } from '../lib/formatters';
 import type { FileEntry } from '../types';
 
 type FileListProps = Pick<FolderViewerModel, 'state' | 'actions'>;
@@ -113,6 +113,7 @@ function getEntrySize(entry: FileEntry) {
 function FileRow({ entry, state, actions }: { entry: FileEntry } & FileListProps) {
 	const selected = state.selectedUris.has(entry.uri);
 	const cut = state.cutUris.has(entry.uri);
+	const runnable = isRunnableApplication(entry);
 	const classes = selected
 		? 'bg-(--vscode-list-activeSelectionBackground) text-(--vscode-list-activeSelectionForeground)'
 		: 'hover:bg-(--vscode-list-hoverBackground) hover:text-(--vscode-list-hoverForeground)';
@@ -136,7 +137,7 @@ function FileRow({ entry, state, actions }: { entry: FileEntry } & FileListProps
 			onContextMenu={event => actions.showContextMenu(event, entry)}
 		>
 			<div className="flex min-w-0 items-center gap-2">
-				<i className={`codicon ${entry.type === 'directory' ? 'codicon-folder text-(--vscode-symbolIcon-folderForeground,var(--vscode-icon-foreground))' : `${getFileIcon(entry.name)} text-(--vscode-symbolIcon-fileForeground,var(--vscode-icon-foreground))`} shrink-0 text-base ${selected ? 'text-inherit!' : ''}`} />
+				<i className={`codicon ${runnable ? 'codicon-symbol-method text-(--vscode-symbolIcon-fileForeground,var(--vscode-icon-foreground))' : entry.type === 'directory' ? 'codicon-folder text-(--vscode-symbolIcon-folderForeground,var(--vscode-icon-foreground))' : `${getFileIcon(entry.name)} text-(--vscode-symbolIcon-fileForeground,var(--vscode-icon-foreground))`} shrink-0 text-base ${selected ? 'text-inherit!' : ''}`} />
 				<span className="overflow-hidden text-ellipsis whitespace-nowrap">{entry.name}</span>
 			</div>
 			<span className={`entry-created overflow-hidden text-xs text-ellipsis whitespace-nowrap max-[600px]:hidden ${selected ? 'text-inherit' : 'text-(--vscode-descriptionForeground)'}`}>{formatDate(entry.created)}</span>

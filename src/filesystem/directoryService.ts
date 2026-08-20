@@ -4,6 +4,7 @@ export interface FileEntry {
 	name: string;
 	uri: string;
 	type: 'file' | 'directory';
+	runnable?: boolean;
 	size: number;
 	created: number;
 	modified: number;
@@ -16,11 +17,15 @@ export async function readDirectory(directoryUri: vscode.Uri): Promise<FileEntry
 	const entries = await Promise.all(
 		directoryEntries.map(async ([name, fileType]): Promise<FileEntry> => {
 			const uri = vscode.Uri.joinPath(directoryUri, name);
-			const stat = await limit(() => vscode.workspace.fs.stat(uri));
+			const [stat, runnable] = await Promise.all([
+				limit(() => vscode.workspace.fs.stat(uri)),
+				limit(() => isRunnableApplication(uri, fileType))
+			]);
 			return {
 				name,
 				uri: uri.toString(),
 				type: fileType & vscode.FileType.Directory ? 'directory' : 'file',
+				runnable: runnable || undefined,
 				size: stat.size,
 				created: stat.ctime,
 				modified: stat.mtime
@@ -34,6 +39,32 @@ export async function readDirectory(directoryUri: vscode.Uri): Promise<FileEntry
 		}
 		return left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' });
 	});
+}
+
+export async function isRunnableApplication(uri: vscode.Uri, fileType?: vscode.FileType): Promise<boolean> {
+	if (uri.scheme !== 'file') return false;
+	const type = fileType ?? (await vscode.workspace.fs.stat(uri)).type;
+	const lowerName = uri.path.toLowerCase();
+	if (process.platform === 'win32') {
+		return Boolean(type & vscode.FileType.File) && lowerName.endsWith('.exe');
+	}
+	if (process.platform !== 'darwin' || !(type & vscode.FileType.Directory) || !lowerName.endsWith('.app')) {
+		return false;
+	}
+
+	try {
+		const contentsUri = vscode.Uri.joinPath(uri, 'Contents');
+		const [infoStat, macOsStat, macOsEntries] = await Promise.all([
+			vscode.workspace.fs.stat(vscode.Uri.joinPath(contentsUri, 'Info.plist')),
+			vscode.workspace.fs.stat(vscode.Uri.joinPath(contentsUri, 'MacOS')),
+			vscode.workspace.fs.readDirectory(vscode.Uri.joinPath(contentsUri, 'MacOS'))
+		]);
+		return Boolean(infoStat.type & vscode.FileType.File)
+			&& Boolean(macOsStat.type & vscode.FileType.Directory)
+			&& macOsEntries.some(([, entryType]) => Boolean(entryType & (vscode.FileType.File | vscode.FileType.SymbolicLink)));
+	} catch {
+		return false;
+	}
 }
 
 export async function calculateDirectorySize(directoryUri: vscode.Uri, token: vscode.CancellationToken): Promise<number> {

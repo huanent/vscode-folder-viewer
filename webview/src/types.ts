@@ -2,6 +2,7 @@ export interface FileEntry {
 	name: string;
 	uri: string;
 	type: 'file' | 'directory';
+	runnable?: boolean;
 	size: number;
 	created: number;
 	modified: number;

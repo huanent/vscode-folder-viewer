@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { ArchiveTreeEntry, ExtensionMessage } from '../../../src/viewer/messages';
+import { isRunnableApplication } from '../lib/formatters';
 import type { ArchiveOperation, ContextMenuState, FileEntry, PersistedState } from '../types';
 import { vscode } from '../services/vscode';
 import { useSelection } from './useSelection';
@@ -91,9 +92,12 @@ export function useFolderViewer(rootElement: HTMLElement) {
 	}
 
 	function openEntry(entry: FileEntry) {
-		if (entry.type === 'directory') {
+		const lowerName = entry.name.toLowerCase();
+		if (isRunnableApplication(entry)) {
+			vscode.postMessage({ type: 'runApplication', uri: entry.uri });
+		} else if (entry.type === 'directory') {
 			requestDirectory(entry.uri, true);
-		} else if (entry.name.toLowerCase().endsWith('.zip')) {
+		} else if (lowerName.endsWith('.zip')) {
 			startArchive('extract', [entry]);
 		} else {
 			vscode.postMessage({ type: 'openFile', uri: entry.uri });
