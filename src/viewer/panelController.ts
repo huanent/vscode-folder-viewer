@@ -180,6 +180,9 @@ export class ViewerPanelController implements vscode.Disposable {
 			case 'openInTerminal':
 				await this.openInTerminal(message.uri);
 				return;
+			case 'openInFileManager':
+				await vscode.commands.executeCommand('revealFileInOS', getSafeUri(rootUri, message.uri));
+				return;
 			case 'previewArchive': {
 				const archiveUri = getSafeUri(rootUri, message.uri);
 				const entries = await readArchiveTree(archiveUri);

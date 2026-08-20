@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent, type ReactNode } from 'react';
 import type { FolderViewerModel } from '../hooks/useFolderViewer';
 import { useContextMenuPosition } from '../hooks/useContextMenuPosition';
-import { isMac } from '../lib/formatters';
+import { getFileManagerName, isMac } from '../lib/formatters';
 
 type ContextMenuProps = Pick<FolderViewerModel, 'state' | 'actions'>;
 
@@ -61,7 +61,7 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 	);
 }
 
-type OpenAction = 'openInCurrentWindow' | 'openInNewTab' | 'openInNewWindow' | 'openInTerminal' | 'previewArchive';
+type OpenAction = 'openInCurrentWindow' | 'openInNewTab' | 'openInNewWindow' | 'openInTerminal' | 'openInFileManager' | 'previewArchive';
 const submenuViewportPadding = 8;
 
 function OpenInMenu({ canOpenFolder, canOpenTerminal, canPreviewArchive, onOpen }: { canOpenFolder: boolean; canOpenTerminal: boolean; canPreviewArchive: boolean; onOpen: (type: OpenAction) => void }) {
@@ -113,6 +113,7 @@ function OpenInMenu({ canOpenFolder, canOpenTerminal, canPreviewArchive, onOpen 
 					<MenuItem label="New Tab" onClick={() => onOpen('openInNewTab')} />
 				</>}
 				{canOpenTerminal && <MenuItem label="Terminal" onClick={() => onOpen('openInTerminal')} />}
+				<MenuItem label={getFileManagerName()} onClick={() => onOpen('openInFileManager')} />
 			</div>}
 		</div>
 	);

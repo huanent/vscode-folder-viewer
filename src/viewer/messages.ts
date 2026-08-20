@@ -21,6 +21,7 @@ export type WebviewMessage =
 	| { type: 'openInNewTab'; uri: string }
 	| { type: 'openInNewWindow'; uri: string }
 	| { type: 'openInTerminal'; uri: string }
+	| { type: 'openInFileManager'; uri: string }
 	| { type: 'previewArchive'; uri: string }
 	| { type: 'compress'; operationId: string; uris: string[]; destinationUri: string }
 	| { type: 'extract'; operationId: string; uri: string }

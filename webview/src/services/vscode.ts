@@ -15,7 +15,7 @@ export type OutboundMessage =
 	| { type: 'rename'; uri: string }
 	| { type: 'copyPath'; uris: string[] }
 	| { type: 'setFavorite'; uri: string; favorite: boolean }
-	| { type: 'openInNewTab' | 'openInNewWindow' | 'openInTerminal'; uri: string }
+	| { type: 'openInCurrentWindow' | 'openInNewTab' | 'openInNewWindow' | 'openInTerminal' | 'openInFileManager'; uri: string }
 	| { type: 'previewArchive'; uri: string }
 	| { type: 'compress'; operationId: string; uris: string[]; destinationUri: string }
 	| { type: 'extract'; operationId: string; uri: string }

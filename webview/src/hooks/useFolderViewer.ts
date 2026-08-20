@@ -153,9 +153,12 @@ export function useFolderViewer(rootElement: HTMLElement) {
 		vscode.postMessage({ type: 'createFile', parentUri });
 	}
 
-	function openFolder(type: 'openInCurrentWindow' | 'openInNewTab' | 'openInNewWindow' | 'openInTerminal') {
+	function openFolder(type: 'openInCurrentWindow' | 'openInNewTab' | 'openInNewWindow' | 'openInTerminal' | 'openInFileManager') {
 		const entry = contextMenu?.entry;
-		vscode.postMessage({ type, uri: contextMenu?.directoryUri ?? (entry?.type === 'directory' ? entry.uri : currentUri) });
+		const uri = type === 'openInFileManager'
+			? contextMenu?.directoryUri ?? entry?.uri ?? currentUri
+			: contextMenu?.directoryUri ?? (entry?.type === 'directory' ? entry.uri : currentUri);
+		vscode.postMessage({ type, uri });
 	}
 
 	function previewArchive() {

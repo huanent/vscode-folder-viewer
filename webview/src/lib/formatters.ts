@@ -37,3 +37,10 @@ export function getRelativePath(rootUri: string, uri: string): string {
 export function isMac(): boolean {
 	return navigator.platform.toLowerCase().includes('mac');
 }
+
+export function getFileManagerName(): string {
+	const platform = navigator.platform.toLowerCase();
+	if (platform.includes('mac')) return 'Finder';
+	if (platform.includes('win')) return 'File Explorer';
+	return 'File Manager';
+}
