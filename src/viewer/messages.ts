@@ -9,6 +9,7 @@ export type WebviewMessage =
 	| { type: 'navigateQuickLocation'; location: 'desktop' | 'downloads' | 'documents' | 'tmp' }
 	| { type: 'navigatePath'; path: string; currentUri: string }
 	| { type: 'openFile'; uri: string }
+	| { type: 'previewSpreadsheet'; uri: string }
 	| { type: 'runApplication'; uri: string }
 	| { type: 'calculateDirectorySize'; uri: string }
 	| { type: 'setClipboard'; uris: string[]; operation: 'cut' | 'copy' }

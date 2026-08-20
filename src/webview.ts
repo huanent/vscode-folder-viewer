@@ -23,7 +23,7 @@ export function getWebviewHtml(
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src ${webview.cspSource} 'nonce-${nonce}';">
 	<link rel="stylesheet" href="${styleUri}">
 	<title>${escapeHtml(folderName)}</title>
 </head>
@@ -35,6 +35,31 @@ export function getWebviewHtml(
 		data-history="${escapeHtml(JSON.stringify(initialViewState.history))}"
 		data-entries="${escapeHtml(JSON.stringify(initialEntries))}"
 	></div>
+	<script nonce="${nonce}" type="module" src="${scriptUri}"></script>
+</body>
+</html>`;
+}
+
+export function getSpreadsheetPreviewHtml(
+	webview: vscode.Webview,
+	extensionUri: vscode.Uri,
+	name: string
+): string {
+	const nonce = getNonce();
+	const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'explorer.css'));
+	const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'spreadsheet.js'));
+
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src ${webview.cspSource} 'nonce-${nonce}';">
+	<link rel="stylesheet" href="${styleUri}">
+	<title>${escapeHtml(name)}</title>
+</head>
+<body>
+	<div id="root" data-name="${escapeHtml(name)}"></div>
 	<script nonce="${nonce}" type="module" src="${scriptUri}"></script>
 </body>
 </html>`;

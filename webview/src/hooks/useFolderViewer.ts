@@ -99,6 +99,8 @@ export function useFolderViewer(rootElement: HTMLElement) {
 			requestDirectory(entry.uri, true);
 		} else if (lowerName.endsWith('.zip')) {
 			startArchive('extract', [entry]);
+		} else if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.csv')) {
+			vscode.postMessage({ type: 'previewSpreadsheet', uri: entry.uri });
 		} else {
 			vscode.postMessage({ type: 'openFile', uri: entry.uri });
 		}

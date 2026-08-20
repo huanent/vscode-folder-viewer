@@ -62,9 +62,29 @@ export function ContextMenu({ state, actions }: ContextMenuProps) {
 }
 
 type OpenAction = 'openInCurrentWindow' | 'openInNewTab' | 'openInNewWindow' | 'openInTerminal' | 'openInFileManager' | 'previewArchive';
+type OpenMenuItem = { label: string; action: OpenAction };
 const submenuViewportPadding = 8;
 
 function OpenInMenu({ canOpenFolder, canOpenTerminal, canPreviewArchive, onOpen }: { canOpenFolder: boolean; canOpenTerminal: boolean; canPreviewArchive: boolean; onOpen: (type: OpenAction) => void }) {
+	const items: OpenMenuItem[] = [
+		...(canPreviewArchive ? [{ label: 'Preview', action: 'previewArchive' as const }] : []),
+		...(canOpenFolder ? [
+			{ label: 'Current Window', action: 'openInCurrentWindow' as const },
+			{ label: 'New Window', action: 'openInNewWindow' as const },
+			{ label: 'New Tab', action: 'openInNewTab' as const }
+		] : []),
+		...(canOpenTerminal ? [{ label: 'Terminal', action: 'openInTerminal' as const }] : []),
+		{ label: getFileManagerName(), action: 'openInFileManager' }
+	];
+
+	if (items.length === 1) {
+		return <MenuItem label={`Open in ${items[0].label}`} onClick={() => onOpen(items[0].action)} />;
+	}
+
+	return <OpenInSubmenu items={items} onOpen={onOpen} />;
+}
+
+function OpenInSubmenu({ items, onOpen }: { items: OpenMenuItem[]; onOpen: (type: OpenAction) => void }) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const submenuRef = useRef<HTMLDivElement>(null);
 	const [isOpen, setIsOpen] = useState(false);
@@ -106,14 +126,7 @@ function OpenInMenu({ canOpenFolder, canOpenTerminal, canPreviewArchive, onOpen 
 		<div ref={containerRef} className="relative" onMouseEnter={openMenu} onMouseLeave={() => setIsOpen(false)} onFocus={openMenu} onBlur={handleBlur}>
 			<MenuItem label="Open in..." submenu aria-haspopup="menu" aria-expanded={isOpen} />
 			{isOpen && <div ref={submenuRef} className="fixed z-30 min-w-48 rounded border border-(--vscode-menu-border,var(--vscode-panel-border)) bg-(--vscode-menu-background) p-1 shadow-[0_2px_8px_var(--vscode-widget-shadow)]" role="menu" style={submenuPosition}>
-				{canPreviewArchive && <MenuItem label="Preview" onClick={() => onOpen('previewArchive')} />}
-				{canOpenFolder && <>
-					<MenuItem label="Current Window" onClick={() => onOpen('openInCurrentWindow')} />
-					<MenuItem label="New Window" onClick={() => onOpen('openInNewWindow')} />
-					<MenuItem label="New Tab" onClick={() => onOpen('openInNewTab')} />
-				</>}
-				{canOpenTerminal && <MenuItem label="Terminal" onClick={() => onOpen('openInTerminal')} />}
-				<MenuItem label={getFileManagerName()} onClick={() => onOpen('openInFileManager')} />
+				{items.map(item => <MenuItem key={item.action} label={item.label} onClick={() => onOpen(item.action)} />)}
 			</div>}
 		</div>
 	);

@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import * as vscode from 'vscode';
 import { getDisplayName } from '../filesystem/entry';
 import { ClipboardState } from '../filesystem/operations';
+import { readSpreadsheet } from '../spreadsheet';
+import { getSpreadsheetPreviewHtml } from '../webview';
 import { ViewerDocument } from './document';
 import { FavoritesStore } from './favoritesStore';
 import { ViewerPanelController } from './panelController';
@@ -111,6 +113,33 @@ export class ViewerManager implements vscode.Disposable {
 		});
 	}
 
+	async openSpreadsheetPreview(uri: vscode.Uri): Promise<void> {
+		const name = getDisplayName(uri);
+		const panel = vscode.window.createWebviewPanel(
+			'folderViewer.spreadsheetPreview',
+			name,
+			vscode.ViewColumn.Active,
+			{
+				enableScripts: true,
+				localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'media')]
+			}
+		);
+		panel.iconPath = new vscode.ThemeIcon('table');
+		const ready = waitForSpreadsheetPreviewReady(panel);
+		panel.webview.html = getSpreadsheetPreviewHtml(panel.webview, this.context.extensionUri, name);
+		try {
+			await ready;
+			const sheets = await readSpreadsheet(uri);
+			await panel.webview.postMessage({ type: 'loaded', sheets });
+		} catch (error) {
+			await panel.webview.postMessage({
+				type: 'error',
+				message: error instanceof Error ? error.message : String(error)
+			});
+			throw error;
+		}
+	}
+
 	private openCustomDocument(uri: vscode.Uri): ViewerDocument {
 		const rootValue = new URLSearchParams(uri.query).get('root');
 		if (!rootValue) {
@@ -190,6 +219,21 @@ export class ViewerManager implements vscode.Disposable {
 	private getFavoritesWithinRoot(rootUri: vscode.Uri, favorites: string[]) {
 		return favorites.filter(value => isUriWithinRoot(rootUri, value));
 	}
+}
+
+function waitForSpreadsheetPreviewReady(panel: vscode.WebviewPanel): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const messageDisposable = panel.webview.onDidReceiveMessage(message => {
+			if (message?.type !== 'ready') return;
+			messageDisposable.dispose();
+			disposeDisposable.dispose();
+			resolve();
+		});
+		const disposeDisposable = panel.onDidDispose(() => {
+			messageDisposable.dispose();
+			reject(new Error('Spreadsheet preview was closed before it finished loading.'));
+		});
+	});
 }
 
 function parseHistory(uri: vscode.Uri): string[] {

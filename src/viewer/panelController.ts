@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
-import { spawn } from 'child_process';
+import { execFile, spawn } from 'child_process';
 import * as os from 'os';
 import * as path from 'path';
+import { promisify } from 'util';
 import { ArchiveOperation, compressEntries, extractArchive, OperationCancelledError, readArchiveTree } from '../archive';
 import { calculateDirectorySize, isRunnableApplication, readDirectory } from '../filesystem/directoryService';
 import { getDisplayName } from '../filesystem/entry';
@@ -11,6 +12,8 @@ import { ViewerDocument } from './document';
 import { webviewFocusContextKey, type ViewerManager } from './manager';
 import { WebviewMessage } from './messages';
 import { getSafeUri } from './uri';
+
+const execFileAsync = promisify(execFile);
 
 export class ViewerPanelController implements vscode.Disposable {
 	private readonly archiveOperations = new Map<string, ArchiveOperation>();
@@ -128,6 +131,15 @@ export class ViewerPanelController implements vscode.Disposable {
 			case 'openFile':
 				await vscode.commands.executeCommand('vscode.open', getSafeUri(rootUri, message.uri));
 				return;
+			case 'previewSpreadsheet': {
+				const spreadsheetUri = getSafeUri(rootUri, message.uri);
+				const extension = path.extname(spreadsheetUri.path).toLowerCase();
+				if (extension !== '.xlsx' && extension !== '.csv') {
+					throw new Error('Only XLSX and CSV files can be previewed.');
+				}
+				await this.manager.openSpreadsheetPreview(spreadsheetUri);
+				return;
+			}
 			case 'runApplication':
 				await this.runApplication(message.uri);
 				return;
@@ -337,11 +349,15 @@ export class ViewerPanelController implements vscode.Disposable {
 			throw new Error('The selected item is not a runnable application.');
 		}
 		if (process.platform === 'win32') {
-			spawn(applicationUri.fsPath, [], { cwd: path.dirname(applicationUri.fsPath), detached: true, stdio: 'ignore' }).unref();
+			await spawnDetached(applicationUri.fsPath, [], path.dirname(applicationUri.fsPath));
 			return;
 		}
 		if (process.platform === 'darwin') {
-			spawn('open', [applicationUri.fsPath], { detached: true, stdio: 'ignore' }).unref();
+			try {
+				await execFileAsync('open', [applicationUri.fsPath]);
+			} catch (error) {
+				throw new Error(`Failed to open "${getDisplayName(applicationUri)}": ${getProcessErrorMessage(error)}`);
+			}
 			return;
 		}
 	}
@@ -440,6 +456,27 @@ async function assertDirectory(uri: vscode.Uri, errorMessage: string): Promise<v
 	if (!(stat.type & vscode.FileType.Directory)) {
 		throw new Error(errorMessage);
 	}
+}
+
+function spawnDetached(command: string, args: string[], cwd: string): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const child = spawn(command, args, { cwd, detached: true, stdio: 'ignore' });
+		child.once('error', reject);
+		child.once('spawn', () => {
+			child.unref();
+			resolve();
+		});
+	});
+}
+
+function getProcessErrorMessage(error: unknown): string {
+	if (error && typeof error === 'object' && 'stderr' in error) {
+		const stderr = String(error.stderr).trim();
+		if (stderr) {
+			return stderr;
+		}
+	}
+	return error instanceof Error ? error.message : String(error);
 }
 
 function isFileNotFound(error: unknown): boolean {

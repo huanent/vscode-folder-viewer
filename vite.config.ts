@@ -10,9 +10,12 @@ export default defineConfig({
 		outDir: '../media',
 		emptyOutDir: true,
 		rollupOptions: {
-			input: 'webview/src/main.tsx',
+			input: {
+				explorer: 'webview/src/main.tsx',
+				spreadsheet: 'webview/src/spreadsheetMain.tsx'
+			},
 			output: {
-				entryFileNames: 'explorer.js',
+				entryFileNames: '[name].js',
 				assetFileNames: assetInfo => assetInfo.names?.some(name => name.endsWith('.css'))
 					? 'explorer.css'
 					: 'assets/[name]-[hash][extname]'
